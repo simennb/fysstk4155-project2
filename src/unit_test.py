@@ -5,21 +5,26 @@ from sklearn.linear_model import SGDRegressor
 import sgd
 
 def test_SGD():
+    np.random.seed(100)
+    N_epochs = 50
     m = 100
     x = 2*np.random.rand(m, 1)
     y = 4+3*x+np.random.randn(m, 1)
 
     X = np.c_[np.ones((m, 1)), x]
-    theta_linreg = np.linalg.inv(X.T @ X) @ (X.T @ y)
-    print("Own inversion")
-    print(theta_linreg)
-    sgdreg = SGDRegressor(max_iter=50, penalty=None, eta0=0.1)
+    beta_linreg = np.linalg.inv(X.T @ X) @ (X.T @ y)
+    print("Linear inversion")
+    print(beta_linreg)
+    sgdreg = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1)#, learning_rate='constant')
     sgdreg.fit(x, y.ravel())
     print("sgdreg from scikit")
     print(sgdreg.intercept_, sgdreg.coef_)
 
-    meow = sgd.SGD(50, m, None, 0.1)
-    meow.fit(x, y.ravel())
+    sgdreg_own = sgd.LinRegSGD(N_epochs, m, eta0=0.1)
+    sgdreg_own.set_step_length(0.1, 10.0)
+    sgdreg_own.fit(X, y.ravel())
+    print("LinRegSGD")
+    print(sgdreg_own.beta)
 
 
 '''
