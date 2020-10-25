@@ -1,16 +1,45 @@
 import numpy as np
+from numba import njit
+#from numba.experimental import jitclass
+import functions as fun
+
+#@fun.timeit
+@njit
+def gradient_descent_linreg(X, y, n_epochs, N_mb, m, beta, etas):#, seed):
+    """
+    An attempt to speed up the gradient descent using jit, as my first implementation is ~4 (or more depending on size)
+    orders of magnitude slower than SGDRegressor.
+
+    Its a lot faster than it was, but still quite a bit slower than SKL, with ~2.5 orders of magnitude slower.
+    Forcing SKL to run all iterations (setting tol=None) brings the performance diff to roughly one order of magnitude.
+    """
+    j = 0  # counter to determine which eta value we are at
+    for epoch in range(n_epochs):
+        for i in range(N_mb):
+            i_rand = np.random.randint(N_mb)
+            xi = X[i_rand*m:i_rand*m + m]
+            yi = y[i_rand*m:i_rand*m + m]
+
+            gradients = 2 * xi.T @ ((xi @ beta) - yi)
+            eta = etas[j]
+            beta = beta - eta * gradients
+            j += 1
+
+    return beta
 
 
+#@jitclass
 class LinRegSGD:
-    def __init__(self, n_epochs, n_minibatch, regularization=None, eta0=0.1):
+    def __init__(self, n_epochs, n_minibatch, regularization=None, eta0=0.1, learning_rate='constant'):
         self._n_epochs = n_epochs
         self._n_minibatch = n_minibatch
         self._regularization = regularization
         self._eta = eta0
+        self._learning_rate = learning_rate
 
         self._lmb = None
-        self._t0 = None
-        self._t1 = None
+        self._t0 = 10#None
+        self._t1 = 0.1#None
         self._seed = None
 
         self.beta = None
@@ -20,12 +49,30 @@ class LinRegSGD:
         TODO: currently i partition it into N_mb minibatches, so each batch is always the same indexes
         TODO: maybe make sure that we are shuffling at the correct time? there is no overlap between batches at least.
         """
+#        print('Fit', X.shape)
         N, p = X.shape
         N_mb = self._n_minibatch
         m = int(N/N_mb)  # number of elements in each minibatch
 
-        beta = np.random.randn(p, 1)
+        beta = np.random.randn(p)#, 1)  # beta here is (p, 1), while in OLS its (p,) WHYYYYYYYYYYYYYYYYYYYYY
+        # TODO: FIND UOT WHY
 
+        # Try to speeeeeeeed up with jit
+        etas = np.zeros(self._n_epochs*N_mb)
+        if self._learning_rate == 'constant':
+            etas[:] = self._eta
+        else:  # Fix better
+            epochs = np.arange(self._n_epochs, dtype=np.float64)
+            i_s = np.arange(N_mb, dtype=np.float64)
+            epochs, i_s = np.meshgrid(epochs, i_s)
+#            print(epochs, i_s)
+            etas = self._learning_schedule(epochs*N_mb + i_s)
+            etas = etas.ravel()
+
+        # Gradient descent
+        beta = gradient_descent_linreg(X, y, self._n_epochs, N_mb, m, beta, etas)
+
+        '''
         for epoch in range(self._n_epochs):
             for i in range(N_mb):
                 i_rand = np.random.randint(N_mb)
@@ -37,11 +84,13 @@ class LinRegSGD:
                 eta = self._eta
 
                 beta = beta - eta * gradients
-
+        '''
         self.beta = beta
 
     def predict(self, X):
+#        print(X.shape)
         ytilde = X @ self.beta
+#        print(ytilde.shape, self.beta.shape)
         return ytilde
 
     def set_lambda(self, lmb):
@@ -57,6 +106,18 @@ class LinRegSGD:
     def _learning_schedule(self, t):
         return self._t0 / (t + self._t1)
 
+
+# HOLD ON
+# THIS IS FROM NUMBA/JIT WEBPAGE
+'''
+@numba.jit(nopython=True, parallel=True)
+def logistic_regression(Y, X, w, iterations):
+    for i in range(iterations):
+        w -= np.dot(((1.0 /
+              (1.0 + np.exp(-Y * np.dot(X, w)))
+              - 1.0) * Y), X)
+    return w
+'''
 
 class LogRegSGD(LinRegSGD):
     pass

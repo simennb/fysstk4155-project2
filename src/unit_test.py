@@ -1,13 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import SGDRegressor
-#from sgd import SGD
 import sgd
+import time
+
 
 def test_SGD():
     np.random.seed(100)
-    N_epochs = 50
-    m = 100
+    N_epochs = 500
+    m = 1000
     x = 2*np.random.rand(m, 1)
     y = 4+3*x+np.random.randn(m, 1)
 
@@ -15,16 +16,29 @@ def test_SGD():
     beta_linreg = np.linalg.inv(X.T @ X) @ (X.T @ y)
     print("Linear inversion")
     print(beta_linreg)
-    sgdreg = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1)#, learning_rate='constant')
+    sgdreg = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1)#, tol=None)#, learning_rate='constant')
+#    sgdreg = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1, tol=None)
+#    sgdreg = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1, tol=None, learning_rate='constant')
+    ts_skl = time.time()
     sgdreg.fit(x, y.ravel())
+    te_skl = time.time()
     print("sgdreg from scikit")
     print(sgdreg.intercept_, sgdreg.coef_)
 
-    sgdreg_own = sgd.LinRegSGD(N_epochs, m, eta0=0.1)
+    sgdreg_own = sgd.LinRegSGD(N_epochs, m, eta0=0.1, learning_rate='')
     sgdreg_own.set_step_length(0.1, 10.0)
+    sgdreg_own.fit(X, y.ravel())  # First time its run will also compile
+    ts_own = time.time()
     sgdreg_own.fit(X, y.ravel())
+    te_own = time.time()
     print("LinRegSGD")
     print(sgdreg_own.beta)
+
+    t_skl = te_skl - ts_skl
+    t_own = te_own - ts_own
+    print('Time SKL: %.3e s' % t_skl)
+    print('Time own: %.3e s' % t_own)
+    print('Factor own/skl = %.3e' % (t_own/t_skl))
 
 
 '''
