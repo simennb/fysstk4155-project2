@@ -5,6 +5,7 @@ from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 from imageio import imread
 import time
+from numba import njit
 
 
 ###########################################################
@@ -93,6 +94,15 @@ def split_data(X, y, test_size=0.2):
     y_test = (y[i_split:]).copy()
 
     return X_train, X_test, y_train, y_test
+
+
+@njit
+def shuffle_data(X, y):
+    N = len(y)
+    index = np.arange(N)
+    X = (X[index]).copy()
+    y = (y[index]).copy()
+    return X, y
 
 
 def scale_X(X, scale=None):

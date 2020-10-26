@@ -32,7 +32,7 @@ def test_SGD():
     sgdreg_own.fit(X, y.ravel())
     te_own = time.time()
     print("LinRegSGD")
-    print(sgdreg_own.beta)
+    print(sgdreg_own.theta)
 
     t_skl = te_skl - ts_skl
     t_own = te_own - ts_own

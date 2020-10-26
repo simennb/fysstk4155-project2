@@ -1,11 +1,11 @@
 import numpy as np
 from numba import njit
-#from numba.experimental import jitclass
 import functions as fun
+
 
 #@fun.timeit
 @njit
-def gradient_descent_linreg(X, y, n_epochs, N_mb, m, beta, etas):#, seed):
+def gradient_descent_linreg(X, y, n_epochs, N_mb, m, theta, etas, lmb=0.0):#, seed):
     """
     An attempt to speed up the gradient descent using jit, as my first implementation is ~4 (or more depending on size)
     orders of magnitude slower than SGDRegressor.
@@ -20,15 +20,17 @@ def gradient_descent_linreg(X, y, n_epochs, N_mb, m, beta, etas):#, seed):
             xi = X[i_rand*m:i_rand*m + m]
             yi = y[i_rand*m:i_rand*m + m]
 
-            gradients = 2 * xi.T @ ((xi @ beta) - yi)
+#            gradients = 2 * xi.T @ ((xi @ theta) - yi)
+            gradients = 2 * (xi.T @ ((xi @ theta) - yi) + lmb*theta)  # Ridge, lmb=0 yields OLS
+
             eta = etas[j]
-            beta = beta - eta * gradients
+            theta = theta - eta * gradients
             j += 1
+        X, y = fun.shuffle_data(X, y)  # or put in GD-func?
 
-    return beta
+    return theta
 
 
-#@jitclass
 class LinRegSGD:
     def __init__(self, n_epochs, n_minibatch, regularization=None, eta0=0.1, learning_rate='constant'):
         self._n_epochs = n_epochs
@@ -38,11 +40,11 @@ class LinRegSGD:
         self._learning_rate = learning_rate
 
         self._lmb = None
-        self._t0 = 10#None
-        self._t1 = 0.1#None
+        self._t0 = 1.0#None
+        self._t1 = 10.0#None
         self._seed = None
 
-        self.beta = None
+        self.theta = None
 
     def fit(self, X, y):
         """
@@ -54,7 +56,7 @@ class LinRegSGD:
         N_mb = self._n_minibatch
         m = int(N/N_mb)  # number of elements in each minibatch
 
-        beta = np.random.randn(p)#, 1)  # beta here is (p, 1), while in OLS its (p,) WHYYYYYYYYYYYYYYYYYYYYY
+        theta = np.random.randn(p)#, 1)  # beta here is (p, 1), while in OLS its (p,) WHYYYYYYYYYYYYYYYYYYYYY
         # TODO: FIND UOT WHY
 
         # Try to speeeeeeeed up with jit
@@ -70,7 +72,7 @@ class LinRegSGD:
             etas = etas.ravel()
 
         # Gradient descent
-        beta = gradient_descent_linreg(X, y, self._n_epochs, N_mb, m, beta, etas)
+        theta = gradient_descent_linreg(X, y, self._n_epochs, N_mb, m, theta, etas)
 
         '''
         for epoch in range(self._n_epochs):
@@ -85,12 +87,10 @@ class LinRegSGD:
 
                 beta = beta - eta * gradients
         '''
-        self.beta = beta
+        self.theta = theta
 
     def predict(self, X):
-#        print(X.shape)
-        ytilde = X @ self.beta
-#        print(ytilde.shape, self.beta.shape)
+        ytilde = X @ self.theta
         return ytilde
 
     def set_lambda(self, lmb):

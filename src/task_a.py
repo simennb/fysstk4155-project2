@@ -18,7 +18,7 @@ fig_path = '../figures/'
 data_path = '../datafiles/'
 write_path = '../datafiles/'
 
-p = 20  # degree of polynomial for the task
+p = 30  # degree of polynomial for the task
 scale = [True, False]  # first index is whether to subtract mean, second is to scale by std
 
 test_size = 0.2
@@ -32,16 +32,16 @@ reg_str = 'SGD_SKL'
 
 # Creating data set for the Franke function tasks
 seed = 4155
-n_franke = 32  # 529 points
+n_franke = 23  # 529 points
 N = n_franke**2  # Total number of samples n*2
 noise = 0.05  # noise level
 
 # Bootstrap and CV variables
-N_bootstraps = 1#int(N / 2)  # number of resamples (ex. N/2, N/4)
+N_bootstraps = 100#int(N / 2)  # number of resamples (ex. N/2, N/4)
 K = 5
 
 # Stochastic gradient descent parameters
-N_epochs = 500  # Number of epochs in SGD
+N_epochs = 50  # Number of epochs in SGD
 N_minibatch = 10  # Number of mini-batches
 eta0 = 0.1  # Start training rate
 learning_rate = 'meow'  # constant
@@ -176,8 +176,8 @@ def run_regression(X, z, reg_string, polydegree, lambdas, N_bs, K, test_size, sc
             elif reg_string == 'Lasso':
                 reg_obj = skl.Lasso(alpha=lmb, max_iter=max_iter, precompute=True, warm_start=True)
             elif reg_string == 'SGD_SKL':
-#                reg_obj = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1)  # , learning_rate='constant')
-                reg_obj = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1, learning_rate='constant')
+                reg_obj = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1)  # , learning_rate='constant')
+#                reg_obj = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1, learning_rate='constant')
 
 
             # Bootstrap
@@ -264,8 +264,9 @@ cv_error_train_opt, cv_error_test_opt, cv_lmb_opt = variables[11:14]
 bs_min, bs_best, cv_min, cv_best = variables[14:18]
 
 # Bootstrap plots
-xlim = [1, 20]
-ylim = [0.0, 0.02]
+xlim = [1, 30]
+#ylim = [0.0, 0.02]
+ylim = [0.0, 0.05]
 fun.plot_MSE_train_test(polydegree, bs_error_train_opt[:, 0], bs_error_test_opt[:, 0],
                         '%s, $N$=%d, $N_{bs}$=%d, noise=%.2f' % (reg_str, N, N_bootstraps, noise),
                         'train_test_%s' % save_bs, fig_path, run_mode,

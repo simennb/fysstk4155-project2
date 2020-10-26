@@ -1,8 +1,13 @@
 import numpy as np
 
+
 class NeuralNetwork:
     def __init__(self):
         pass
+
+    def add_layer(self):
+        pass
+
 
 # From lecture notes week 41, slide 21
 class NeuralNetwork:
