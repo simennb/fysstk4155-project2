@@ -1,12 +1,106 @@
 import numpy as np
+import activation_functions as act_fun
 
 
 class NeuralNetwork:
-    def __init__(self):
-        pass
+    def __init__(self, X_data, y_data, epochs, batch_size, eta, lmb):
+        self._X_data = X_data
+        self._y_data = y_data
+        self._epochs = epochs
+        self._batch_size = batch_size
+        self._eta = eta
+        self._lmb = lmb
 
-    def add_layer(self):
-        pass
+        # lists etc for the neural network
+        self._n_layers = 0
+        self._n_neurons = []
+        self._weights = []
+        self._bias = []
+        self._a = []
+        self._probabilities = None
+        self._regularization = []
+        self._activation = []
+
+    def add_layer(self, n_neurons, activation, regularization, bias_init=0.01, weight_init='Random'):
+        self._n_neurons.append(n_neurons)
+        layer_index = len(self._n_neurons) - 1
+        if len(self._weights) != 0:
+            self._weights.append(np.random.randn(self._n_neurons[layer_index - 1], n_neurons))
+            self._bias.append(np.zeros(n_neurons) + bias_init)
+        else:
+            self._weights.append(None)
+            self._bias.append(None)
+
+        # TODO: Make activation into a function to make adjustments independent of this
+#        self._activation.append(self._get_activation_function(activation))
+        if activation == 'sigmoid':
+            self._activation.append(act_fun.sigmoid)
+        elif activation == 'relu':
+            self._activation.append(act_fun.relu)
+
+#        self._error.append(None)
+        self._n_layers += 1
+
+    def _feed_forward(self):
+        for i in range(1, self._n_layers):
+            z = np.matmul(self.a[i-1], self._weights[i]) + self._bias[i]
+            self.a[i] = self._activation[i](z)
+
+        self._probabilities = self.a[i]  # something
+
+        # feed-forward for training
+#        self.z_h = np.matmul(self.X_data, self.hidden_weights) + self.hidden_bias
+#        self.a_h = sigmoid(self.z_h)
+
+#        self.z_o = np.matmul(self.a_h, self.output_weights) + self.output_bias
+
+#        exp_term = np.exp(self.z_o)
+#        self.probabilities = exp_term / np.sum(exp_term, axis=1, keepdims=True)
+
+    def _back_propagation(self):
+        # TODO: Check if there is a smarter way to do this
+        # lst = [None] * 10
+        error = list(range(self._n_layers))  # easier to do it this way
+        weights_gradient = list(range(self._n_layers))
+        bias_gradient = list(range(self._n_layers))
+
+        # TODO: see if i can put everything into the loop, IT SHOULD BE POSSIBLE
+#        error[-1] = self._probabilities - self.Y_data
+#        weights_gradient[-1] = np.matmul(self.a[-2].T, error[-1])
+#        bias_gradient[-1] = np.sum(error[-1], axis=0)
+
+        for i in range(self._n_layers, 0):
+            if i == (self._n_layers - 1):
+                error[i] = self._probabilities - self.Y_data
+            else:
+                error[i] = np.matmul(error[i+1], self._weights[i+1].T) * self.a[i] * (1 - self.a)  # TODO: check
+
+            weights_gradient[i] = np.matmul(self.a[i-1], error[i])
+            bias_gradient[i] = np.sum(error[i], axis=0)
+
+            if self._lmb > 0.0:
+                weights_gradient[i] += self.lmb * self._weights[i]
+
+            self._weights[i] -= self.eta * weights_gradient
+            self._bias[i] -= self.eta * bias_gradient
+
+    def feed_forward_output(self):
+        self._feed_forward()
+        return self._probabilities
+
+    def train(self):
+        # Divide into mini batches and do SGD
+        self._feed_forward()
+        self._back_propagation()
+
+    @staticmethod
+    def _get_activation_function(activation):
+        if activation == 'sigmoid':
+            function = act_fun.sigmoid
+        elif activation == 'relu':
+            function = act_fun.relu
+
+        return function
 
 
 # From lecture notes week 41, slide 21
