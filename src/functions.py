@@ -100,6 +100,7 @@ def split_data(X, y, test_size=0.2):
 def shuffle_data(X, y):
     N = len(y)
     index = np.arange(N)
+    np.random.shuffle(index)
     X = (X[index]).copy()
     y = (y[index]).copy()
     return X, y

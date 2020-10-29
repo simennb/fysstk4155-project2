@@ -7,16 +7,17 @@ import time
 
 def test_SGD():
     np.random.seed(100)
-    N_epochs = 500
-    m = 1000
+    N_epochs = 50
+    m = 100
     x = 2*np.random.rand(m, 1)
     y = 4+3*x+np.random.randn(m, 1)
+    learning_rate = 'invscaling'
 
     X = np.c_[np.ones((m, 1)), x]
     beta_linreg = np.linalg.inv(X.T @ X) @ (X.T @ y)
     print("Linear inversion")
     print(beta_linreg)
-    sgdreg = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1)#, tol=None)#, learning_rate='constant')
+    sgdreg = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1, tol=None, learning_rate=learning_rate)
 #    sgdreg = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1, tol=None)
 #    sgdreg = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1, tol=None, learning_rate='constant')
     ts_skl = time.time()
@@ -25,8 +26,8 @@ def test_SGD():
     print("sgdreg from scikit")
     print(sgdreg.intercept_, sgdreg.coef_)
 
-    sgdreg_own = sgd.LinRegSGD(N_epochs, m, eta0=0.1, learning_rate='')
-    sgdreg_own.set_step_length(0.1, 10.0)
+    sgdreg_own = sgd.LinRegSGD(N_epochs, batch_size=1, eta0=0.1, learning_rate=learning_rate)
+    sgdreg_own.set_step_length(5, 50.0)
     sgdreg_own.fit(X, y.ravel())  # First time its run will also compile
     ts_own = time.time()
     sgdreg_own.fit(X, y.ravel())
@@ -38,7 +39,11 @@ def test_SGD():
     t_own = te_own - ts_own
     print('Time SKL: %.3e s' % t_skl)
     print('Time own: %.3e s' % t_own)
-    print('Factor own/skl = %.3e' % (t_own/t_skl))
+
+    try:
+        print('Factor own/skl = %.3e' % (t_own/t_skl))
+    except ZeroDivisionError:
+        print('t_skl = 0, t_own = ', t_own)
 
 
 '''

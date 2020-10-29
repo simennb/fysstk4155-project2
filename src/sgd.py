@@ -3,39 +3,60 @@ from numba import njit
 import functions as fun
 
 
+# Attempting to speed up the process by using jit.
 #@fun.timeit
-@njit
-def gradient_descent_linreg(X, y, n_epochs, N_mb, m, theta, etas, lmb=0.0):#, seed):
+@njit#(parallel=True)  # very slow with parallel, compilation takes forever, run itself is "only" ~36 seconds
+def gradient_descent_linreg(X, y, n_epochs, N_mb, m, theta, eta0, penalty=None, lmb=0.0, lr='constant', t0=1.0, t1=10):#, seed):
     """
     An attempt to speed up the gradient descent using jit, as my first implementation is ~4 (or more depending on size)
     orders of magnitude slower than SGDRegressor.
 
-    Its a lot faster than it was, but still quite a bit slower than SKL, with ~2.5 orders of magnitude slower.
+    Now only ~0-1 orders of magnitude slower than SKL, which is neat.
     Forcing SKL to run all iterations (setting tol=None) brings the performance diff to roughly one order of magnitude.
     """
-    j = 0  # counter to determine which eta value we are at
+    j = 1.0
     for epoch in range(n_epochs):
+        # TODO: shuffle in each epoch? no wait, that shuffled train and test each epoch?????
         for i in range(N_mb):
             i_rand = np.random.randint(N_mb)
             xi = X[i_rand*m:i_rand*m + m]
             yi = y[i_rand*m:i_rand*m + m]
 
 #            gradients = 2 * xi.T @ ((xi @ theta) - yi)
-            gradients = 2 * (xi.T @ ((xi @ theta) - yi) + lmb*theta)  # Ridge, lmb=0 yields OLS
+            gradients = 2 * xi.T @ ((xi @ theta) - yi)
+            if penalty == 'l2':
+                gradients += lmb*theta  # Ridge
+            elif penalty == 'l1':
+                gradients -= lmb*np.sign(theta)  # Lasso, not sure about this
 
-            eta = etas[j]
+            if lr == 'constant':
+                eta = eta0
+            elif lr == 'optimal':
+                # TODO: figure out how to deal with name, since not identical to SKL
+                eta = learning_schedule(epoch*N_mb + i, t0, t1)
+            elif lr == 'invscaling':
+                eta = eta0 / np.power(j, 0.25)  # should be identical to SKL, looked at code
             theta = theta - eta * gradients
             j += 1
+
         X, y = fun.shuffle_data(X, y)  # or put in GD-func?
+        # wont do anything for batches of size 1, but check for larger if it matters
 
     return theta
 
+@njit
+def learning_schedule(t, t0, t1):
+    return t0 / (t + t1)
 
 class LinRegSGD:
-    def __init__(self, n_epochs, n_minibatch, regularization=None, eta0=0.1, learning_rate='constant'):
+    def __init__(self, n_epochs, batch_size, penalty=None, eta0=0.1, learning_rate='constant'):
+        """
+        learning rate: string, takes either values 'constant' or 'invscaling'. Latter one chosen to match the similar
+            learning schedule that SKL has, making it easier to run both. ÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆ
+        """
         self._n_epochs = n_epochs
-        self._n_minibatch = n_minibatch
-        self._regularization = regularization
+        self._batch_size = batch_size
+        self._penalty = penalty
         self._eta = eta0
         self._learning_rate = learning_rate
 
@@ -53,26 +74,17 @@ class LinRegSGD:
         """
 #        print('Fit', X.shape)
         N, p = X.shape
-        N_mb = self._n_minibatch
-        m = int(N/N_mb)  # number of elements in each minibatch
+        m = self._batch_size
+        N_mb = int(N/m)  # Number of mini-batches
+#        N_mb = self._n_minibatch
+#        m = int(N/N_mb)  # number of elements in each minibatch
 
         theta = np.random.randn(p)#, 1)  # beta here is (p, 1), while in OLS its (p,) WHYYYYYYYYYYYYYYYYYYYYY
         # TODO: FIND UOT WHY
 
-        # Try to speeeeeeeed up with jit
-        etas = np.zeros(self._n_epochs*N_mb)
-        if self._learning_rate == 'constant':
-            etas[:] = self._eta
-        else:  # Fix better
-            epochs = np.arange(self._n_epochs, dtype=np.float64)
-            i_s = np.arange(N_mb, dtype=np.float64)
-            epochs, i_s = np.meshgrid(epochs, i_s)
-#            print(epochs, i_s)
-            etas = self._learning_schedule(epochs*N_mb + i_s)
-            etas = etas.ravel()
-
         # Gradient descent
-        theta = gradient_descent_linreg(X, y, self._n_epochs, N_mb, m, theta, etas)
+        theta = gradient_descent_linreg(X, y, self._n_epochs, N_mb, m, theta, self._eta, penalty=self._penalty,
+                                        lmb=self._lmb, lr=self._learning_rate, t0=self._t0, t1=self._t1)
 
         '''
         for epoch in range(self._n_epochs):
@@ -102,9 +114,6 @@ class LinRegSGD:
 
     def set_seed(self, seed):
         self._seed = seed
-
-    def _learning_schedule(self, t):
-        return self._t0 / (t + self._t1)
 
 
 # HOLD ON

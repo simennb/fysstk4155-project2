@@ -27,8 +27,8 @@ test_size = 0.2
 reg_str = 'OLS'
 #reg_str = 'Ridge'
 #reg_str = 'Lasso'  # probably not needed
-#reg_str = 'SGD'
-reg_str = 'SGD_SKL'
+reg_str = 'SGD'
+#reg_str = 'SGD_SKL'
 
 # Creating data set for the Franke function tasks
 seed = 4155
@@ -42,9 +42,13 @@ K = 5
 
 # Stochastic gradient descent parameters
 N_epochs = 50  # Number of epochs in SGD
-N_minibatch = 10  # Number of mini-batches
+batch_size = 10  # size of each mini-batch
+# N_minibatch = 10  # Number of mini-batches
 eta0 = 0.1  # Start training rate
-learning_rate = 'meow'  # constant
+learning_rate = 'optimal'#'invscaling'  # constant
+t0 = 5
+t1 = 100
+penalty = 'l2'
 
 # Benchmark settings
 benchmark = False  # setting to True will adjust all relevant settings for all task
@@ -58,8 +62,10 @@ if benchmark is True:
     N_bootstraps = 264
     K = 5
     N_epochs = 100
-    N_minibatch = 10
+    batch_size = 1
+#    N_minibatch = 10
     eta0 = 0.1
+    penalty = None
 
 
 # Printing some information for logging purposes
@@ -89,7 +95,7 @@ X = fun.generate_polynomial(x_ravel, y_ravel, p)
 ########################################################################################################################
 #@fun.timeit
 @ignore_warnings(category=ConvergenceWarning)
-def run_regression(X, z, reg_string, polydegree, lambdas, N_bs, K, test_size, scale, max_iter=50000):
+def run_regression(X, z, reg_string, polydegree, lambdas, N_bs, K, test_size, scale, max_iter=50000, t0=1, t1=10, penalty=None):
     """
     Runs the selected regression methods for the input design matrix, p's, lambdas, and using
     the resampling methods as specified.
@@ -145,7 +151,9 @@ def run_regression(X, z, reg_string, polydegree, lambdas, N_bs, K, test_size, sc
     elif reg_string == 'Ridge':
         reg_obj = reg.RidgeRegression()
     elif reg_string == 'SGD':
-        reg_obj = sgd.LinRegSGD(N_epochs, 100, eta0=0.1, learning_rate=learning_rate)
+        reg_obj = sgd.LinRegSGD(n_epochs=N_epochs, batch_size=batch_size, eta0=0.1,
+                                penalty=penalty, learning_rate=learning_rate)
+        reg_obj.set_step_length(t0=t0, t1=t1)
 
     # Looping over all polynomial degrees in the analysis
     for degree in polydegree:
@@ -175,8 +183,10 @@ def run_regression(X, z, reg_string, polydegree, lambdas, N_bs, K, test_size, sc
                 reg_obj.set_lambda(lmb)
             elif reg_string == 'Lasso':
                 reg_obj = skl.Lasso(alpha=lmb, max_iter=max_iter, precompute=True, warm_start=True)
+            elif reg_string == 'SGD':
+                reg_obj.set_lambda(lmb)
             elif reg_string == 'SGD_SKL':
-                reg_obj = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1)  # , learning_rate='constant')
+                reg_obj = SGDRegressor(max_iter=N_epochs, penalty=penalty, eta0=0.1)
 #                reg_obj = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1, learning_rate='constant')
 
 
@@ -245,6 +255,7 @@ def run_regression(X, z, reg_string, polydegree, lambdas, N_bs, K, test_size, sc
 # Setting up to make sure things work
 nlambdas = 1
 lambdas = np.ones(nlambdas)
+lambdas[0] = 1e-4
 
 # Parameters for saving to file
 save = 'N%d_pmax%d_nlamb%d_noise%.2f_seed%d' % (N, p, nlambdas, noise, seed)
@@ -253,7 +264,7 @@ save_cv = '%s_%s_%s_k%d' % (save, reg_str, 'cv', K)
 
 # Performing the regression
 polydegree = np.arange(1, p + 1)
-variables = run_regression(X, z_ravel, reg_str, polydegree, lambdas, N_bootstraps, K, test_size, scale)
+variables = run_regression(X, z_ravel, reg_str, polydegree, lambdas, N_bootstraps, K, test_size, scale, t0=t0, t1=t1, penalty=penalty)
 # Unpacking variables
 bs_error_train, bs_error_test = variables[0:2]
 bs_bias, bs_var = variables[2:4]

@@ -3,13 +3,20 @@ import activation_functions as act_fun
 
 
 class NeuralNetwork:
-    def __init__(self, X_data, y_data, epochs, batch_size, eta, lmb):
+    def __init__(self, X_data, y_data, epochs, batch_size, eta, lmb, t0=1.0, t1=10.0):
         self._X_data = X_data
         self._y_data = y_data
         self._epochs = epochs
         self._batch_size = batch_size
-        self._eta = eta
         self._lmb = lmb
+        self._n_minibatch = len(self._y_data / self._batch_size)
+        self._X_batch = None
+        self._y_batch = None
+
+        # Learning rate parameters
+        self._eta = eta
+        self._t0 = t0
+        self._t1 = t1
 
         # lists etc for the neural network
         self._n_layers = 0
@@ -17,11 +24,18 @@ class NeuralNetwork:
         self._weights = []
         self._bias = []
         self._a = []
+        self._z = []
         self._probabilities = None
         self._regularization = []
         self._activation = []
+        self._d_activation = []
 
-    def add_layer(self, n_neurons, activation, regularization, bias_init=0.01, weight_init='Random'):
+        # Create the input layer
+        self._n_inputs = self._X_data.shape[0]
+        self._n_features = self._X_data.shape[1]
+        self.add_layer(self._n_features, 'identity')
+
+    def add_layer(self, n_neurons, activation, regularization=None, bias_init=0.01, weight_init='Random'):
         self._n_neurons.append(n_neurons)
         layer_index = len(self._n_neurons) - 1
         if len(self._weights) != 0:
@@ -31,80 +45,106 @@ class NeuralNetwork:
             self._weights.append(None)
             self._bias.append(None)
 
-        # TODO: Make activation into a function to make adjustments independent of this
-#        self._activation.append(self._get_activation_function(activation))
-        if activation == 'sigmoid':
-            self._activation.append(act_fun.sigmoid)
-        elif activation == 'relu':
-            self._activation.append(act_fun.relu)
+        # For easier indexing
+        self._a.append(None)
+        self._z.append(None)
 
-#        self._error.append(None)
+        # Add activation function and derivative to lists
+        self._add_activation_function(activation)
+
         self._n_layers += 1
 
     def _feed_forward(self):
         for i in range(1, self._n_layers):
-            z = np.matmul(self.a[i-1], self._weights[i]) + self._bias[i]
-            self.a[i] = self._activation[i](z)
+            self._z[i] = np.matmul(self._a[i-1], self._weights[i]) + self._bias[i]
+            self._a[i] = self._activation[i](self._z[i])
 
-        self._probabilities = self.a[i]  # something
-
-        # feed-forward for training
-#        self.z_h = np.matmul(self.X_data, self.hidden_weights) + self.hidden_bias
-#        self.a_h = sigmoid(self.z_h)
-
-#        self.z_o = np.matmul(self.a_h, self.output_weights) + self.output_bias
-
-#        exp_term = np.exp(self.z_o)
-#        self.probabilities = exp_term / np.sum(exp_term, axis=1, keepdims=True)
+        self._probabilities = self._a[-1]  # something ????????????????????
 
     def _back_propagation(self):
-        # TODO: Check if there is a smarter way to do this
-        # lst = [None] * 10
         error = list(range(self._n_layers))  # easier to do it this way
         weights_gradient = list(range(self._n_layers))
         bias_gradient = list(range(self._n_layers))
 
-        # TODO: see if i can put everything into the loop, IT SHOULD BE POSSIBLE
-#        error[-1] = self._probabilities - self.Y_data
-#        weights_gradient[-1] = np.matmul(self.a[-2].T, error[-1])
-#        bias_gradient[-1] = np.sum(error[-1], axis=0)
-
-        for i in range(self._n_layers, 0):
+        for i in range(self._n_layers - 1, 0, -1):
             if i == (self._n_layers - 1):
-                error[i] = self._probabilities - self.Y_data
+                error[i] = self._probabilities - self._y_batch
             else:
-                error[i] = np.matmul(error[i+1], self._weights[i+1].T) * self.a[i] * (1 - self.a)  # TODO: check
+                error[i] = np.matmul(error[i+1], self._weights[i+1].T) * self._d_activation[i](self._z[i])
 
-            weights_gradient[i] = np.matmul(self.a[i-1], error[i])
+            weights_gradient[i] = np.matmul(self._a[i-1], error[i])
             bias_gradient[i] = np.sum(error[i], axis=0)
 
             if self._lmb > 0.0:
-                weights_gradient[i] += self.lmb * self._weights[i]
+                weights_gradient[i] += self._lmb * self._weights[i]
 
-            self._weights[i] -= self.eta * weights_gradient
-            self._bias[i] -= self.eta * bias_gradient
+            self._weights[i] -= self._eta * weights_gradient
+            self._bias[i] -= self._eta * bias_gradient
 
-    def feed_forward_output(self):
+    def predict(self, X):
+        self._a[0] = X
         self._feed_forward()
         return self._probabilities
 
-    def train(self):
+    def fit(self):
+        # TODO: Do we do minibatches like in SGD or draw with replacement as done in the Lecture neural network?
         # Divide into mini batches and do SGD
-        self._feed_forward()
-        self._back_propagation()
 
-    @staticmethod
-    def _get_activation_function(activation):
+        data_indices = np.arange(self._n_inputs)
+        for i in range(self._epochs):
+            for j in range(self._n_minibatch):
+                # pick datapoints with replacement
+                batch_indices = np.random.choice(data_indices, size=self._batch_size, replace=False)
+
+                self._X_batch = self._X_data[batch_indices]
+                self._y_batch = self._y_data[batch_indices]
+                self._a[0] = self._X_batch  # kinda superfluous to have both this and X_batch
+
+                self._feed_forward()
+                self._back_propagation()
+
+        '''
+        data_indices = np.arange(self.n_inputs)
+
+        for i in range(self.epochs):
+            for j in range(self.iterations):
+                # pick datapoints with replacement
+                chosen_datapoints = np.random.choice(
+                    data_indices, size=self.batch_size, replace=False
+                )
+
+                # minibatch training data
+                self.X_data = self.X_data_full[chosen_datapoints]
+                self.Y_data = self.Y_data_full[chosen_datapoints]
+
+                self.feed_forward()
+                self.backpropagation()
+        '''
+
+    def _learning_schedule(self, t):
+        return self._t0 / (t + self._t1)
+
+    def _add_activation_function(self, activation):
         if activation == 'sigmoid':
-            function = act_fun.sigmoid
+            self._activation.append(act_fun.sigmoid)
+            self._d_activation.append(act_fun.d_sigmoid)
         elif activation == 'relu':
-            function = act_fun.relu
-
-        return function
+            self._activation.append(act_fun.relu)
+            self._d_activation.append(act_fun.d_relu)
+        elif activation == 'leaky relu':
+            self._activation.append(act_fun.leaky_relu)
+            self._d_activation.append(act_fun.d_leaky_relu)
+        elif activation == 'tanh':
+            self._activation.append(act_fun.tanh)
+            self._d_activation.append(act_fun.d_tanh)
+        else:
+            # if no activation function, not sure if this works
+            self._activation.append(lambda z: z)
+            self._d_activation.append(lambda z: 1)
 
 
 # From lecture notes week 41, slide 21
-class NeuralNetwork:
+class LectureNetwork:
     def __init__(
             self,
             X_data,
