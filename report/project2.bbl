@@ -1,14 +1,5 @@
 \begin{thebibliography}{1}
 
-\bibitem{Franke}
-Richard Franke.
-\newblock A critical comparison of some methods for interpolation of scattered
-  data, 1979.
-
-\bibitem{terrain}
-Earthexplorer.
-\newblock \url{https://earthexplorer.usgs.gov/}.
-
 \bibitem{Hastie}
 Hastie et~al.
 \newblock {\em The Elements of Statistical Learning - Data Mining, Inference,
@@ -22,5 +13,14 @@ Wessel~N. van Wieringen.
 \bibitem{Github1}
 Github repository, project 1.
 \newblock \url{https://github.com/simennb/fysstk4155-project1}.
+
+\bibitem{terrain}
+Earthexplorer.
+\newblock \url{https://earthexplorer.usgs.gov/}.
+
+\bibitem{Franke}
+Richard Franke.
+\newblock A critical comparison of some methods for interpolation of scattered
+  data, 1979.
 
 \end{thebibliography}

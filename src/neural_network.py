@@ -2,7 +2,15 @@ import numpy as np
 import activation_functions as act_fun
 
 
+# TODO: 30/10, dimension mismatch in weights_gradient (at least, probably everywhere)
 class NeuralNetwork:
+    """MEOW MEOW MEOW MEOW MEOW
+    CAT CAT CAT CAT CAT
+
+    Parameters
+    ----------
+    X_data: np.array
+    """
     def __init__(self, X_data, y_data, epochs, batch_size, eta, lmb, t0=1.0, t1=10.0):
         self._X_data = X_data
         self._y_data = y_data
@@ -26,7 +34,7 @@ class NeuralNetwork:
         self._a = []
         self._z = []
         self._probabilities = None
-        self._regularization = []
+        self._regularization = []  # TODO: figure out
         self._activation = []
         self._d_activation = []
 
@@ -59,7 +67,7 @@ class NeuralNetwork:
             self._z[i] = np.matmul(self._a[i-1], self._weights[i]) + self._bias[i]
             self._a[i] = self._activation[i](self._z[i])
 
-        self._probabilities = self._a[-1]  # something ????????????????????
+        self._probabilities = self._a[-1]  # TODO: ...yes?
 
     def _back_propagation(self):
         error = list(range(self._n_layers))  # easier to do it this way
@@ -68,9 +76,20 @@ class NeuralNetwork:
 
         for i in range(self._n_layers - 1, 0, -1):
             if i == (self._n_layers - 1):
+                # TODO: huh
                 error[i] = self._probabilities - self._y_batch
+                print(self._probabilities.shape)
+                print(error[i].shape)
+                print(self._y_batch.shape)
+                print('meow')
             else:
                 error[i] = np.matmul(error[i+1], self._weights[i+1].T) * self._d_activation[i](self._z[i])
+                print('nyaa')
+
+            print(self._a[i-1].shape)
+            # TODO: check and compare dimensions with the Lecture notes NN code
+            # TODO: cause atm there is something weird here
+            # TODO: oh well
 
             weights_gradient[i] = np.matmul(self._a[i-1], error[i])
             bias_gradient[i] = np.sum(error[i], axis=0)
@@ -81,12 +100,8 @@ class NeuralNetwork:
             self._weights[i] -= self._eta * weights_gradient
             self._bias[i] -= self._eta * bias_gradient
 
-    def predict(self, X):
-        self._a[0] = X
-        self._feed_forward()
-        return self._probabilities
-
     def fit(self):
+        # TODO: Wait, im confused
         # TODO: Do we do minibatches like in SGD or draw with replacement as done in the Lecture neural network?
         # Divide into mini batches and do SGD
 
@@ -97,29 +112,16 @@ class NeuralNetwork:
                 batch_indices = np.random.choice(data_indices, size=self._batch_size, replace=False)
 
                 self._X_batch = self._X_data[batch_indices]
-                self._y_batch = self._y_data[batch_indices]
+                self._y_batch = self._y_data[batch_indices].reshape(-1, 1)  # TODO: check resample, shapes are weird
                 self._a[0] = self._X_batch  # kinda superfluous to have both this and X_batch
 
                 self._feed_forward()
                 self._back_propagation()
 
-        '''
-        data_indices = np.arange(self.n_inputs)
-
-        for i in range(self.epochs):
-            for j in range(self.iterations):
-                # pick datapoints with replacement
-                chosen_datapoints = np.random.choice(
-                    data_indices, size=self.batch_size, replace=False
-                )
-
-                # minibatch training data
-                self.X_data = self.X_data_full[chosen_datapoints]
-                self.Y_data = self.Y_data_full[chosen_datapoints]
-
-                self.feed_forward()
-                self.backpropagation()
-        '''
+    def predict(self, X):
+        self._a[0] = X
+        self._feed_forward()
+        return self._probabilities
 
     def _learning_schedule(self, t):
         return self._t0 / (t + self._t1)
@@ -143,7 +145,9 @@ class NeuralNetwork:
             self._d_activation.append(lambda z: 1)
 
 
+###########################################################
 # From lecture notes week 41, slide 21
+# temporary for easy comparison
 class LectureNetwork:
     def __init__(
             self,

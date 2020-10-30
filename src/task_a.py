@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import sklearn.linear_model as skl
 import sys
 from sklearn.linear_model import SGDRegressor
-from sklearn.utils.testing import ignore_warnings
-from sklearn.exceptions import ConvergenceWarning
+from sklearn.utils.testing import ignore_warnings  # For lasso, maybe remove if no lasso
+from sklearn.exceptions import ConvergenceWarning  # same as above
 
 
 run_mode = 'a'
@@ -55,7 +55,7 @@ benchmark = False  # setting to True will adjust all relevant settings for all t
 if benchmark is True:
     p = 5
     scale = [True, False]
-    reg_str = 'SGD'  # set to SGD maybe since thats the point of the task
+    reg_str = 'SGD'  # set to SGD maybe since that's the point of the task
     n_franke = 23
     N = 529
     noise = 0.05
@@ -67,10 +67,8 @@ if benchmark is True:
     eta0 = 0.1
     penalty = None
 
-
 # Printing some information for logging purposes
-fun.print_parameters_franke(seed, N, noise, p, scale, test_size)
-
+fun.print_parameters_franke(seed, N, noise, p, scale, test_size)  # TODO: fix to print reasonable parameters
 
 # Randomly generated meshgrid
 np.random.seed(seed)
@@ -92,6 +90,7 @@ z_ravel = np.ravel(z_mesh)
 X = fun.generate_polynomial(x_ravel, y_ravel, p)
 
 
+# TODO: remove dependency on function once i've decided what i actually need to do in this task
 ########################################################################################################################
 #@fun.timeit
 @ignore_warnings(category=ConvergenceWarning)

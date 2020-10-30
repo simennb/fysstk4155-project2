@@ -33,6 +33,7 @@ def gradient_descent_linreg(X, y, n_epochs, N_mb, m, theta, eta0, penalty=None, 
                 eta = eta0
             elif lr == 'optimal':
                 # TODO: figure out how to deal with name, since not identical to SKL
+                # aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
                 eta = learning_schedule(epoch*N_mb + i, t0, t1)
             elif lr == 'invscaling':
                 eta = eta0 / np.power(j, 0.25)  # should be identical to SKL, looked at code
@@ -81,24 +82,12 @@ class LinRegSGD:
 
         theta = np.random.randn(p)#, 1)  # beta here is (p, 1), while in OLS its (p,) WHYYYYYYYYYYYYYYYYYYYYY
         # TODO: FIND UOT WHY
+        # TODO: hmmm
 
         # Gradient descent
         theta = gradient_descent_linreg(X, y, self._n_epochs, N_mb, m, theta, self._eta, penalty=self._penalty,
                                         lmb=self._lmb, lr=self._learning_rate, t0=self._t0, t1=self._t1)
 
-        '''
-        for epoch in range(self._n_epochs):
-            for i in range(N_mb):
-                i_rand = np.random.randint(N_mb)
-                xi = X[i_rand*m:i_rand*m + m]
-                yi = y[i_rand*m:i_rand*m + m]
-
-                gradients = 2 * xi.T @ ((xi @ beta) - yi)
-#                eta = self._learning_schedule(epoch * N_mb + i)
-                eta = self._eta
-
-                beta = beta - eta * gradients
-        '''
         self.theta = theta
 
     def predict(self, X):
@@ -116,22 +105,13 @@ class LinRegSGD:
         self._seed = seed
 
 
-# HOLD ON
-# THIS IS FROM NUMBA/JIT WEBPAGE
-'''
-@numba.jit(nopython=True, parallel=True)
-def logistic_regression(Y, X, w, iterations):
-    for i in range(iterations):
-        w -= np.dot(((1.0 /
-              (1.0 + np.exp(-Y * np.dot(X, w)))
-              - 1.0) * Y), X)
-    return w
-'''
-
+# TODO: implement
 class LogRegSGD(LinRegSGD):
     pass
 
+
 if __name__ == '__main__':
+    # TODO: From lecture notes, remove later
     from math import exp, sqrt
     from random import random, seed
     import numpy as np
