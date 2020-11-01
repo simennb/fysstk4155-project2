@@ -1,6 +1,8 @@
 import numpy as np
 import activation_functions as act_fun
 
+import sys
+
 
 # TODO: 30/10, dimension mismatch in weights_gradient (at least, probably everywhere)
 class NeuralNetwork:
@@ -12,6 +14,8 @@ class NeuralNetwork:
     X_data: np.array
     """
     def __init__(self, X_data, y_data, epochs, batch_size, eta, lmb, t0=1.0, t1=10.0):
+        np.random.seed(4155)
+
         self._X_data = X_data
         self._y_data = y_data
         self._epochs = epochs
@@ -73,10 +77,10 @@ class NeuralNetwork:
         error = list(range(self._n_layers))  # easier to do it this way
         weights_gradient = list(range(self._n_layers))
         bias_gradient = list(range(self._n_layers))
-
         for i in range(self._n_layers - 1, 0, -1):
             if i == (self._n_layers - 1):
                 error[i] = self._a[i] - self._y_batch  # TODO: what?
+#                error[i] = self._output - self._y_batch  # TODO: what?
             else:
                 error[i] = np.matmul(error[i+1], self._weights[i+1].T) * self._d_activation[i](self._z[i])
 
@@ -86,6 +90,8 @@ class NeuralNetwork:
             if self._lmb > 0.0:
                 weights_gradient[i] += self._lmb * self._weights[i]
 
+        # To avoid updating the weights for the layers before all the gradients are calculated
+        for i in range(self._n_layers - 1, 0, -1):
             self._weights[i] -= self._eta * weights_gradient[i]
             self._bias[i] -= self._eta * bias_gradient[i]
 
@@ -93,16 +99,14 @@ class NeuralNetwork:
         # TODO: Wait, im confused
         # TODO: Do we do minibatches like in SGD or draw with replacement as done in the Lecture neural network?
         # Divide into mini batches and do SGD
-#        np.random.seed(4155)
         data_indices = np.arange(self._n_inputs)
         for i in range(self._epochs):
             for j in range(self._n_minibatch):
-#                print('j :', j)
                 # pick datapoints with replacement
                 batch_indices = np.random.choice(data_indices, size=self._batch_size, replace=False)
 
                 self._X_batch = self._X_data[batch_indices]
-                self._y_batch = self._y_data[batch_indices].reshape(-1, 1)  # TODO: check resample, shapes are weird
+                self._y_batch = self._y_data[batch_indices]#.reshape(-1, 1)  # TODO: check resample, shapes are weird
                 self._a[0] = self._X_batch  # kinda superfluous to have both this and X_batch
 
                 self._feed_forward()
@@ -155,6 +159,8 @@ class LectureNetwork:
             eta=0.1,
             lmbd=0.0):
 
+        np.random.seed(4155)
+
         self.X_data_full = X_data
         self.Y_data_full = Y_data
 
@@ -185,7 +191,7 @@ class LectureNetwork:
 
         self.z_o = np.matmul(self.a_h, self.output_weights) + self.output_bias
 
-        exp_term = np.exp(self.z_o)
+#        exp_term = np.exp(self.z_o)
         self.probabilities = self.z_o#exp_term/ np.sum(exp_term, axis=1, keepdims=True)
 
     def feed_forward_out(self, X):
@@ -201,7 +207,7 @@ class LectureNetwork:
 
     def backpropagation(self):
         error_output = self.probabilities - self.Y_data
-        error_hidden = np.matmul(error_output, self.output_weights.T) * self.a_h * (1 - self.a_h)
+        error_hidden = np.matmul(error_output, self.output_weights.T) * act_fun.d_sigmoid(self.z_h)#* self.a_h * (1 - self.a_h)
 
         self.output_weights_gradient = np.matmul(self.a_h.T, error_output)
         self.output_bias_gradient = np.sum(error_output, axis=0)
@@ -240,9 +246,18 @@ class LectureNetwork:
                 self.X_data = self.X_data_full[chosen_datapoints]
                 self.Y_data = self.Y_data_full[chosen_datapoints]
 
+#                print(self.X_data.shape, self.Y_data.shape)
+
                 self.feed_forward()
+#                print(self.z_h, self.z_o)
+#                print(self.a_h, self.probabilities)
                 self.backpropagation()
-#            print(i)
+#                sys.exit(1)
+
+                if i == -1 and j % 50 == 0:
+                    print('i=%d, j=%d' % (i, j))
+                    print(chosen_datapoints)
+                    print(self.probabilities)
 
 
 if __name__ == '__main__':

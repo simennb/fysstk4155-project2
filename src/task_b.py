@@ -109,6 +109,7 @@ for i in range(len(neuron_layers)):
     neural_net.add_layer(neuron_layers[i], act_func_layers[i])
 
 neural_net.fit()
+
 z_fit = neural_net.predict(X_train_scaled)
 z_pred = neural_net.predict(X_test_scaled)
 
