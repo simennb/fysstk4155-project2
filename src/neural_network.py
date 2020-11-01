@@ -33,7 +33,7 @@ class NeuralNetwork:
         self._bias = []
         self._a = []
         self._z = []
-        self._probabilities = None
+        self._output = None
         self._regularization = []  # TODO: figure out
         self._activation = []
         self._d_activation = []
@@ -67,7 +67,7 @@ class NeuralNetwork:
             self._z[i] = np.matmul(self._a[i-1], self._weights[i]) + self._bias[i]
             self._a[i] = self._activation[i](self._z[i])
 
-        self._probabilities = self._a[-1]  # TODO: ...yes?
+        self._output = self._a[-1]  # TODO: ...yes?
 
     def _back_propagation(self):
         error = list(range(self._n_layers))  # easier to do it this way
@@ -76,38 +76,28 @@ class NeuralNetwork:
 
         for i in range(self._n_layers - 1, 0, -1):
             if i == (self._n_layers - 1):
-                # TODO: huh
-                error[i] = self._probabilities - self._y_batch
-                print(self._probabilities.shape)
-                print(error[i].shape)
-                print(self._y_batch.shape)
-                print('meow')
+                error[i] = self._a[i] - self._y_batch  # TODO: what?
             else:
                 error[i] = np.matmul(error[i+1], self._weights[i+1].T) * self._d_activation[i](self._z[i])
-                print('nyaa')
 
-            print(self._a[i-1].shape)
-            # TODO: check and compare dimensions with the Lecture notes NN code
-            # TODO: cause atm there is something weird here
-            # TODO: oh well
-
-            weights_gradient[i] = np.matmul(self._a[i-1], error[i])
+            weights_gradient[i] = np.matmul(self._a[i-1].T, error[i])
             bias_gradient[i] = np.sum(error[i], axis=0)
 
             if self._lmb > 0.0:
                 weights_gradient[i] += self._lmb * self._weights[i]
 
-            self._weights[i] -= self._eta * weights_gradient
-            self._bias[i] -= self._eta * bias_gradient
+            self._weights[i] -= self._eta * weights_gradient[i]
+            self._bias[i] -= self._eta * bias_gradient[i]
 
     def fit(self):
         # TODO: Wait, im confused
         # TODO: Do we do minibatches like in SGD or draw with replacement as done in the Lecture neural network?
         # Divide into mini batches and do SGD
-
+#        np.random.seed(4155)
         data_indices = np.arange(self._n_inputs)
         for i in range(self._epochs):
             for j in range(self._n_minibatch):
+#                print('j :', j)
                 # pick datapoints with replacement
                 batch_indices = np.random.choice(data_indices, size=self._batch_size, replace=False)
 
@@ -121,7 +111,7 @@ class NeuralNetwork:
     def predict(self, X):
         self._a[0] = X
         self._feed_forward()
-        return self._probabilities
+        return self._output
 
     def _learning_schedule(self, t):
         return self._t0 / (t + self._t1)
@@ -139,10 +129,15 @@ class NeuralNetwork:
         elif activation == 'tanh':
             self._activation.append(act_fun.tanh)
             self._d_activation.append(act_fun.d_tanh)
+        elif activation == 'softmax':
+            self._activation.append(act_fun.softmax)
+            self._d_activation.append(act_fun.d_softmax)
         else:
+            self._activation.append(act_fun.identity)
+            self._d_activation.append(act_fun.d_identity)
             # if no activation function, not sure if this works
-            self._activation.append(lambda z: z)
-            self._d_activation.append(lambda z: 1)
+#            self._activation.append(lambda z: z)
+#            self._d_activation.append(lambda z: 1)
 
 
 ###########################################################
@@ -186,23 +181,23 @@ class LectureNetwork:
     def feed_forward(self):
         # feed-forward for training
         self.z_h = np.matmul(self.X_data, self.hidden_weights) + self.hidden_bias
-        self.a_h = sigmoid(self.z_h)
+        self.a_h = act_fun.sigmoid(self.z_h)
 
         self.z_o = np.matmul(self.a_h, self.output_weights) + self.output_bias
 
         exp_term = np.exp(self.z_o)
-        self.probabilities = exp_term / np.sum(exp_term, axis=1, keepdims=True)
+        self.probabilities = self.z_o#exp_term/ np.sum(exp_term, axis=1, keepdims=True)
 
     def feed_forward_out(self, X):
         # feed-forward for output
         z_h = np.matmul(X, self.hidden_weights) + self.hidden_bias
-        a_h = sigmoid(z_h)
+        a_h = act_fun.sigmoid(z_h)
 
         z_o = np.matmul(a_h, self.output_weights) + self.output_bias
 
         exp_term = np.exp(z_o)
         probabilities = exp_term / np.sum(exp_term, axis=1, keepdims=True)
-        return probabilities
+        return z_o#probabilities
 
     def backpropagation(self):
         error_output = self.probabilities - self.Y_data
@@ -233,7 +228,7 @@ class LectureNetwork:
 
     def train(self):
         data_indices = np.arange(self.n_inputs)
-
+#        np.random.seed(4155)
         for i in range(self.epochs):
             for j in range(self.iterations):
                 # pick datapoints with replacement
@@ -247,3 +242,8 @@ class LectureNetwork:
 
                 self.feed_forward()
                 self.backpropagation()
+#            print(i)
+
+
+if __name__ == '__main__':
+    print('meow')

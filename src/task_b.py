@@ -37,6 +37,7 @@ noise = 0.05  # noise level
 N_bootstraps = 100#int(N / 2)  # number of resamples (ex. N/2, N/4)
 K = 5
 
+# TODO: remove redundancy
 # Neural net parameters
 N_hidden1 = 50
 N_output = 1
@@ -44,7 +45,7 @@ act_hidden1 = 'sigmoid'
 act_output = 'sigmoid'
 
 neuron_layers = [50, 1]  # number of neurons in each layer, last is output layer
-act_func_layers = ['sigmoid', 'sigmoid']
+act_func_layers = ['sigmoid', '']#'sigmoid']
 
 # Stochastic gradient descent parameters
 N_epochs = 50  # Number of epochs in SGD
@@ -108,3 +109,19 @@ for i in range(len(neuron_layers)):
     neural_net.add_layer(neuron_layers[i], act_func_layers[i])
 
 neural_net.fit()
+z_fit = neural_net.predict(X_train_scaled)
+z_pred = neural_net.predict(X_test_scaled)
+
+print('\nNeuralNet:')
+fun.print_MSE_R2(z_train, z_fit, 'train', 'NN')
+fun.print_MSE_R2(z_test, z_pred, 'test', 'NN')
+
+lecturenet = nn.LectureNetwork(X_train, z_train, 50, 1, N_epochs, batch_size, eta0, lmb)
+lecturenet.train()
+
+z_fit = lecturenet.predict_probabilities(X_train_scaled)
+z_pred = lecturenet.predict_probabilities(X_test_scaled)
+
+print('\nLectureNet:')
+fun.print_MSE_R2(z_train, z_fit, 'train', 'NN')
+fun.print_MSE_R2(z_test, z_pred, 'test', 'NN')

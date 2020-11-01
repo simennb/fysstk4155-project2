@@ -46,3 +46,28 @@ def tanh(z):
 @njit
 def d_tanh(z):
     return 1 - tanh(z)**2
+
+
+# Softmax
+#@njit
+def softmax(z):
+    exp_term = np.exp(z)
+    return exp_term / np.sum(exp_term, axis=1, keepdims=True)
+
+
+@njit
+def d_softmax(z):
+    # since we use as output this will never be used
+    # TODO: look closer at it
+    return z
+
+
+# Nothing
+@njit
+def identity(z):
+    return z
+
+
+@njit
+def d_identity(z):
+    return 1
