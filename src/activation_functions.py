@@ -2,7 +2,10 @@ import numpy as np
 from numba import njit
 
 
-# Sigmoid function
+# Attempting to follow MLPClassifier's naming convention
+# To make it easier to test them against each other
+
+# Logistic sigmoid function
 @njit
 def sigmoid(z):
     return 1.0/(1 + np.exp(-z))
@@ -62,7 +65,7 @@ def d_softmax(z):
     return z
 
 
-# Nothing
+# No activation function
 @njit
 def identity(z):
     return z

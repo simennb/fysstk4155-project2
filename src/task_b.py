@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import sklearn.linear_model as skl
 import sys
 import neural_network as nn
+from sklearn.neural_network import MLPRegressor
 
 
 run_mode = 'b'
@@ -41,11 +42,11 @@ K = 5
 # Neural net parameters
 N_hidden1 = 50
 N_output = 1
-act_hidden1 = 'sigmoid'
-act_output = 'sigmoid'
+act_hidden1 = 'logistic'
+act_output = 'logistic'
 
 neuron_layers = [50, 1]  # number of neurons in each layer, last is output layer
-act_func_layers = ['sigmoid', '']#'sigmoid']
+act_func_layers = ['logistic', 'identity']
 
 # Stochastic gradient descent parameters
 N_epochs = 50  # Number of epochs in SGD
@@ -99,12 +100,10 @@ X_train_scaled = fun.scale_X(X_train, scale)
 X_test_scaled = fun.scale_X(X_test, scale)
 #X_scaled = fun.scale_X(X, scale)
 
-
 lmb = 0.0
 
 # Create feed-forward neural net
-neural_net = nn.NeuralNetwork(X_train, z_train, epochs=N_epochs, batch_size=batch_size, eta=eta0, lmb=lmb)
-#neural_net.add_layer(N_hidden1, act_hidden1, )  # hidden layer 1
+neural_net = nn.NeuralNetwork(X_train_scaled, z_train, epochs=N_epochs, batch_size=batch_size, eta=eta0, lmb=lmb)
 for i in range(len(neuron_layers)):
     neural_net.add_layer(neuron_layers[i], act_func_layers[i])
 
@@ -117,12 +116,26 @@ print('\nNeuralNet:')
 fun.print_MSE_R2(z_train, z_fit, 'train', 'NN')
 fun.print_MSE_R2(z_test, z_pred, 'test', 'NN')
 
-lecturenet = nn.LectureNetwork(X_train, z_train, 50, 1, N_epochs, batch_size, eta0, lmb)
+'''
+lecturenet = nn.LectureNetwork(X_train_scaled, z_train, 50, 1, N_epochs, batch_size, eta0, lmb)
 lecturenet.train()
 
 z_fit = lecturenet.predict_probabilities(X_train_scaled)
 z_pred = lecturenet.predict_probabilities(X_test_scaled)
 
 print('\nLectureNet:')
+fun.print_MSE_R2(z_train, z_fit, 'train', 'NN')
+fun.print_MSE_R2(z_test, z_pred, 'test', 'NN')
+'''
+
+# Maybe keras?
+neural_net_SKL = MLPRegressor(hidden_layer_sizes=(neuron_layers[0]), activation='logistic', solver='sgd',
+                              alpha=lmb, batch_size=batch_size, learning_rate_init=eta0, max_iter=N_epochs)
+neural_net_SKL.fit(X_train_scaled, z_train)
+
+z_fit = neural_net_SKL.predict(X_train_scaled)
+z_test = neural_net_SKL.predict(X_test_scaled)
+
+print('\nMLPRegressor:')
 fun.print_MSE_R2(z_train, z_fit, 'train', 'NN')
 fun.print_MSE_R2(z_test, z_pred, 'test', 'NN')

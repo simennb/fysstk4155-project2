@@ -344,9 +344,12 @@ Cross-validation is a resampling method where (in the case of $k$-fold CV) the d
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Implementation} \label{chap:implement}
+\section{Code and Data sets} \label{chap:implement}
+\red{figure out naming}
 \subsection{Code}
-All scripts used to generate the results in this project can be found in the Github repository \cite{Github1}. The code can be found in the \texttt{src} folder, while figures can be found in the \texttt{figures} folder. The data files for the terrain map as well as calculated results can be found in \texttt{datafiles}. The \texttt{benchmark} folder contains a data file for each section of the code with information about the parameters used, in order to easier verify that the program works.
+All scripts used to generate the results in this project can be found in the Github repository \cite{Github1}. \red{DONT THINK WE NEED MUCH MORE THAN THIS, BUT CHECK FEEDBACK + HOW WE DID IN COMPPHYS}
+\\\\
+The code can be found in the \texttt{src} folder, while figures can be found in the \texttt{figures} folder. The data files for the terrain map as well as calculated results can be found in \texttt{datafiles}. The \texttt{benchmark} folder contains a data file for each section of the code with information about the parameters used, in order to easier verify that the program works.
 \\\\
 The main program \texttt{main.py} is split into several different run modes, where the specific details of each one is detailed in table \ref{tab:run_modes}. When starting the program, it prompts you to input one of the following arguments (a,b,c,d,e,f,g), where (a-e) relates to the Franke function, and (f,g) to the terrain data.
 \begin{table}[H]
@@ -378,6 +381,20 @@ The second data set is terrain elevation maps taken from \cite{terrain}, and the
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results and discussion} \label{chap:results}
 In this section, we will be showing some select results from running the code described in Chapter \ref{chap:implement}. More figures and data files, as well as some simpler benchmark runs can be found within their respective folders in the Github repository \cite{Github1}. The results will be split into two sections, the first one pertaining to the Franke function, while the second is the analysis of the terrain data.
+
+\subsection{Franke function}
+
+\subsubsection{Stochastic Gradient Descent}
+
+\subsubsection{Feed-forward Neural Network}
+test different activation functions
+
+\subsection{NOT MNIST, or reduced number recognition}
+\red{MEOW}
+
+\subsubsection{Classification with Neural Network}
+
+\subsubsection{Logistic regression}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
