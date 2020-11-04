@@ -1,24 +1,32 @@
 import numpy as np
 import sys
-import activation_functions as act_fun
+import neuralnet_functions as nn_fun  # TODO: Consider changing name and or making lib folder
 import functions as fun
 
 # TODO 03/11: Could remove some redundancy with taking in X_data / y_data in init and self.train
 # TODO: Could maybe make the train parameter optional?
 # TODO: CHECK WHAT KERAS DOES
 class NeuralNetwork:
-    """MEOW MEOW MEOW MEOW MEOW
+    """Multilayer Perceptron Model
+    MEOW MEOW MEOW MEOW MEOW
     CAT CAT CAT CAT CAT
 
     Parameters
     ----------
     X_data: np.array
+    y_data:
+    epochs:
+    batch_size:
+    eta:
+    lmb:
+    cost_function: string, determines which cost function to use ('MSE' or 'classifier')
     """
-    def __init__(self, X_data, y_data, epochs, batch_size, eta, lmb, learning_rate='constant', t0=1.0, t1=10.0):
+    def __init__(self, X_data, y_data, epochs, batch_size, eta, lmb, cost_function,
+                 learning_rate='constant', t0=1.0, t1=10.0,):
 #        np.random.seed(4155)
 
         self._X_data = X_data
-        self._y_data = y_data
+        self._y_data = y_data.reshape(-1, 1)
         self._epochs = epochs
         self._batch_size = batch_size
         self._lmb = lmb
@@ -47,6 +55,11 @@ class NeuralNetwork:
         self._d_activation = []
         self._init_activation_functions()
 
+        # Set cost function
+        self._cost_function = None
+        self._d_cost_function = None
+        self._set_cost_function(cost_function)
+
         # Create the input layer
         self._n_inputs = self._X_data.shape[0]
         self._n_features = self._X_data.shape[1]
@@ -67,7 +80,7 @@ class NeuralNetwork:
         self._z.append(None)
 
         # Add activation function and derivative to lists
-        self._add_activation_function(activation)
+        self._set_activation_function(activation)
 
         self._n_layers += 1
 
@@ -87,25 +100,34 @@ class NeuralNetwork:
         weights_gradient = [None] * self._n_layers  #list(range(self._n_layers))
         bias_gradient = [None] * self._n_layers  #list(range(self._n_layers))
         for i in range(self._n_layers - 1, 0, -1):
+#            print(i)
             if i == (self._n_layers - 1):
                 # TODO: Wait, this is cost function, right?
 #                error[i] = fun.mean_squared_error(self._y_batch, self._a[i])
 #                error[i] = np.sum((y_data-y_model)**2)/n
-                error[i] = (self._a[i]-self._y_batch)**2
-                error[i] = self._a[i] - self._y_batch  # TODO: what?
+#                error[i] = (self._a[i]-self._y_batch)**2
+#                error[i] = self._a[i] - self._y_batch  # TODO: what?
 #                error[i] = self._output - self._y_batch  # TODO: what?
 #                print(error[i].shape)
-                self._loss.append(error[i][0])
+                error[i] = self._d_cost_function(self._y_batch, self._a[i]) #/ self._batch_size
+             #   print(self._a[i].shape, error[i].shape, '_back_prop')
+#                self._loss.append(error[i][0])
             else:
                 error[i] = np.matmul(error[i+1], self._weights[i+1].T) * self._d_activation[i](self._z[i])
 #            print(i, self._a[i].shape, error[i].shape, self._y_batch.shape)
 #            print('aa', self._a[i], 'bb', error[i], 'cc', self._y_batch)
+            #print(self._a[i].shape, error[i].shape, '_back_prop')
 
-            weights_gradient[i] = np.matmul(self._a[i-1].T, error[i]) / self._batch_size  # seems to work
-            bias_gradient[i] = np.sum(error[i], axis=0) / self._batch_size
+            weights_gradient[i] = np.matmul(self._a[i-1].T, error[i]) / (self._batch_size * self._n_inputs)#self._batch_size  # seems to work
+            bias_gradient[i] = np.sum(error[i], axis=0) / (self._batch_size * self._n_inputs)#self._batch_size
+
+#            print('a ', self._a[i-1].shape, error[i].shape)
+#            print('w ', weights_gradient[i].shape)
 
             if self._lmb > 0.0:
                 weights_gradient[i] += self._lmb * self._weights[i]
+
+#        sys.exit(1)
 
         # To avoid updating the weights for the layers before all the gradients are calculated
         for i in range(self._n_layers - 1, 0, -1):
@@ -129,7 +151,7 @@ class NeuralNetwork:
                 batch_indices = np.random.choice(data_indices, size=self._batch_size, replace=False)
 
                 self._X_batch = self._X_data[batch_indices]
-                self._y_batch = (self._y_data[batch_indices].reshape(-1, 1))#.copy()  # TODO: check resample, shapes are weird
+                self._y_batch = (self._y_data[batch_indices])#.reshape(-1, 1))#.copy()  # TODO: check resample, shapes are weird
                 # TODO: yeah, reshaping changes shit when different batch sizes than 1
                 self._a[0] = self._X_batch#.copy()  # kinda superfluous to have both this and X_batch
 
@@ -139,7 +161,7 @@ class NeuralNetwork:
                     self._eta = self._learning_schedule(self._epochs*self._n_minibatch + i)
                 self._back_propagation()
 #                self._loss.append(self._[0])  # to see how loss function goes over time
-
+            self._loss.append(self._compute_loss())
 
     def predict(self, X):
         self._a[0] = X#.copy()
@@ -149,17 +171,34 @@ class NeuralNetwork:
     def _learning_schedule(self, t):
         return self._t0 / (t + self._t1)
 
+    def _compute_loss(self):
+        y = self.predict(self._X_data)
+        loss = self._cost_function(self._y_data, y)
+#        print(loss.shape, self._y_data.shape, y.shape)
+        return loss[0]
+
     def _init_activation_functions(self):
         self._act_fun_dict = {
-            'logistic': [act_fun.sigmoid, act_fun.d_sigmoid],
-            'relu': [act_fun.relu, act_fun.d_relu],
-            'leaky relu': [act_fun.leaky_relu, act_fun.d_leaky_relu],
-            'tanh': [act_fun.tanh, act_fun.d_tanh],
-            'softmax': [act_fun.softmax, act_fun.d_softmax],
-            'identity': [act_fun.identity, act_fun.d_identity]
+            'logistic': [nn_fun.sigmoid, nn_fun.d_sigmoid],
+            'relu': [nn_fun.relu, nn_fun.d_relu],
+            'leaky relu': [nn_fun.leaky_relu, nn_fun.d_leaky_relu],
+            'tanh': [nn_fun.tanh, nn_fun.d_tanh],
+            'softmax': [nn_fun.softmax, nn_fun.d_softmax],
+            'identity': [nn_fun.identity, nn_fun.d_identity]
         }
 
-    def _add_activation_function(self, activation):
+    def _set_cost_function(self, cost_function):
+        if cost_function == 'MSE':
+            self._cost_function = nn_fun.cost_MSE
+            self._d_cost_function = nn_fun.d_cost_MSE
+        elif cost_function == 'LogLoss':
+            self._cost_function = nn_fun.cost_LogLoss
+            self._d_cost_function = nn_fun.d_cost_LogLoss
+        elif cost_function == 'CrossEntropy':
+            self._cost_function = nn_fun.cost_CrossEntropy
+            self._d_cost_function = nn_fun.d_cost_CrossEntropy
+
+    def _set_activation_function(self, activation):
         try:
             self._activation.append(self._act_fun_dict[activation][0])
             self._d_activation.append(self._act_fun_dict[activation][1])

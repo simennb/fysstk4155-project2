@@ -23,7 +23,7 @@ def gradient_descent_linreg(X, y, n_epochs, N_mb, m, theta, eta0, penalty=None, 
             yi = y[i_rand*m:i_rand*m + m]
 
 #            gradients = 2 * xi.T @ ((xi @ theta) - yi)
-            gradients = 2 * xi.T @ ((xi @ theta) - yi)
+            gradients = 2 * xi.T @ ((xi @ theta) - yi) #/ m # TODO: ??????????????????????????????????????
             if penalty == 'l2':
                 gradients += lmb*theta  # Ridge
             elif penalty == 'l1':

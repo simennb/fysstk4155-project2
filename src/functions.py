@@ -34,11 +34,19 @@ def franke_function(x, y):
 
 
 def mean_squared_error(y_data, y_model):
-    n = np.size(y_model)
-    return np.sum((y_data-y_model)**2)/n
+    y_data = y_data.reshape(-1, 1)
+    y_model = y_model.reshape(-1, 1)
+#    print(y_data.shape, y_model.shape)
+    #n = np.size(y_model)
+    #return np.sum((y_data-y_model)**2)/n
+#    print(np.mean((y_data - y_model) ** 2, axis=0).shape)
+    return np.mean((y_data - y_model) ** 2, axis=0)#, keepdims=True)
 
 
 def calculate_R2(y_data, y_model):
+    y_data = y_data.reshape(-1, 1)
+    y_model = y_model.reshape(-1, 1)
+
     return 1 - np.sum((y_data - y_model) ** 2) / np.sum((y_data - np.mean(y_data)) ** 2)
 
 

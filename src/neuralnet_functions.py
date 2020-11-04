@@ -5,6 +5,48 @@ from numba import njit
 # Attempting to follow MLPClassifier's naming convention
 # To make it easier to test them against each other
 
+################
+# Cost functions
+################
+
+#@njit
+def cost_MSE(y, a):
+    return np.mean((a - y) ** 2, axis=0, keepdims=True)
+
+
+def d_cost_MSE(y, a):
+#    print(y.shape, a.shape)
+    #return (a-y)**2  # TODO: hmmm
+    return (a - y) * 2
+#    return np.mean((a - y) ** 2, axis=0, keepdims=True)
+
+
+# check p. 195 ish av aurelion geron
+@njit
+def cost_LogLoss(y_data, y_model):
+    pass
+
+
+@njit
+def d_cost_LogLoss(y_data, y_model):
+    pass
+
+
+# Cross-Entropy
+@njit
+def cost_CrossEntropy(y_data, y_model):
+    pass
+
+
+@njit
+def d_cost_CrossEntropy(y_data, y_model):
+    pass
+
+
+######################
+# Activation functions
+######################
+
 # Logistic sigmoid function
 @njit
 def sigmoid(z):

@@ -49,12 +49,14 @@ act_func_layers = ['logistic', 'identity']
 
 # Stochastic gradient descent parameters
 N_epochs = 50  # Number of epochs in SGD
-batch_size = 1  # size of each mini-batch
+batch_size = 3  # size of each mini-batch
 N_minibatch = int(N/batch_size)  # Number of mini-batches  # TODO: DOES NOT TAKE TRAIN TEST SPLIT INTO ACCOUNT
 eta0 = 0.1  # Start training rate
-learning_rate = 'optimal'  # constant
-t0 = 5
-t1 = 100
+#learning_rate = 'optimal'  # constant
+learning_rate = 'constant'
+
+t0 = 1
+t1 = 5
 
 # Benchmark settings
 benchmark = False  # setting to True will adjust all relevant settings for all task
@@ -109,7 +111,7 @@ X_test_copy = X_test_scaled.copy()
 
 # Create feed-forward neural net
 neural_net = nn.NeuralNetwork(X_train_scaled, z_train, epochs=N_epochs, batch_size=batch_size, eta=eta0, lmb=lmb,
-                              learning_rate=learning_rate, t0=t0, t1=t1)
+                              cost_function='MSE', learning_rate=learning_rate, t0=t0, t1=t1)
 for i in range(len(neuron_layers)):
     neural_net.add_layer(neuron_layers[i], act_func_layers[i])
 
@@ -136,8 +138,8 @@ fun.print_MSE_R2(z_test, z_pred, 'test', 'NN')
 
 # Maybe keras?
 neural_net_SKL = MLPRegressor(hidden_layer_sizes=(neuron_layers[0]), activation='logistic', solver='sgd',
-                              alpha=lmb, batch_size=batch_size, learning_rate_init=eta0, max_iter=N_epochs,
-                              momentum=1.0, nesterovs_momentum=False)
+                              alpha=lmb, batch_size=batch_size, learning_rate_init=eta0, max_iter=N_epochs)#,
+#                              momentum=1.0, nesterovs_momentum=False)
 neural_net_SKL.fit(X_train_scaled, z_train)
 
 z_fit = neural_net_SKL.predict(X_train_scaled)
@@ -149,13 +151,13 @@ fun.print_MSE_R2(z_test, z_pred, 'test', 'NN')
 
 fs = 16
 N_loss = len(neural_net._loss)
-i_epochs = [int(i*N_loss/N_epochs) for i in range(N_epochs)]
+#i_epochs = [int(i*N_loss/N_epochs) for i in range(N_epochs)]
 indices = np.arange(N_loss)
 plt.plot(indices, neural_net._loss, label='loss')
-plt.plot(i_epochs, [0]*len(i_epochs), '+r', ms=9, label='epochs')
-plt.xlabel('iteration', fontsize=fs)
+#plt.plot(i_epochs, [0]*len(i_epochs), '+r', ms=9, label='epochs')
+plt.xlabel('epoch', fontsize=fs)
 plt.ylabel('loss', fontsize=fs)
-plt.title('Loss function over iteration', fontsize=fs)
+plt.title('Loss function over epoch', fontsize=fs)
 plt.grid('on')
-plt.legend()
+#plt.legend()
 plt.show()
