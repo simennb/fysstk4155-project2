@@ -126,7 +126,7 @@ if __name__ == '__main__':
     theta_linreg = np.linalg.inv(X.T @ X) @ (X.T @ y)
     print("Own inversion")
     print(theta_linreg)
-    sgdreg = SGDRegressor(max_iter = 50, penalty=None, eta0=0.1)
+    sgdreg = SGDRegressor(max_iter=50, penalty=None, eta0=0.1)
     sgdreg.fit(x,y.ravel())
     print("sgdreg from scikit")
     print(sgdreg.intercept_, sgdreg.coef_)

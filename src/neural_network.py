@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 import activation_functions as act_fun
-
+import functions as fun
 
 # TODO 03/11: Could remove some redundancy with taking in X_data / y_data in init and self.train
 # TODO: Could maybe make the train parameter optional?
@@ -14,8 +14,8 @@ class NeuralNetwork:
     ----------
     X_data: np.array
     """
-    def __init__(self, X_data, y_data, epochs, batch_size, eta, lmb, t0=1.0, t1=10.0):
-        np.random.seed(4155)
+    def __init__(self, X_data, y_data, epochs, batch_size, eta, lmb, learning_rate='constant', t0=1.0, t1=10.0):
+#        np.random.seed(4155)
 
         self._X_data = X_data
         self._y_data = y_data
@@ -27,6 +27,8 @@ class NeuralNetwork:
         self._y_batch = None
 
         # Learning rate parameters
+        self._learning_rate = learning_rate
+        self._eta0 = eta
         self._eta = eta
         self._t0 = t0
         self._t1 = t1
@@ -39,6 +41,7 @@ class NeuralNetwork:
         self._a = []
         self._z = []
         self._output = None
+        self._loss = []
         self._regularization = []  # TODO: figure out
         self._activation = []
         self._d_activation = []
@@ -73,9 +76,8 @@ class NeuralNetwork:
         for i in range(1, self._n_layers):
             self._z[i] = np.matmul(self._a[i-1], self._weights[i]) + self._bias[i]
  #           self._z[i] = self._a[i-1] @ self._weights[i] + self._bias[i]  # identical hmm
-
             self._a[i] = self._activation[i](self._z[i])
-#            print('layer=', i, self._a[i].shape)
+
         self._output = self._a[-1]  # TODO: ...yes?
 
     def _back_propagation(self):
@@ -86,8 +88,14 @@ class NeuralNetwork:
         bias_gradient = [None] * self._n_layers  #list(range(self._n_layers))
         for i in range(self._n_layers - 1, 0, -1):
             if i == (self._n_layers - 1):
+                # TODO: Wait, this is cost function, right?
+#                error[i] = fun.mean_squared_error(self._y_batch, self._a[i])
+#                error[i] = np.sum((y_data-y_model)**2)/n
+                error[i] = (self._a[i]-self._y_batch)**2
                 error[i] = self._a[i] - self._y_batch  # TODO: what?
 #                error[i] = self._output - self._y_batch  # TODO: what?
+#                print(error[i].shape)
+                self._loss.append(error[i][0])
             else:
                 error[i] = np.matmul(error[i+1], self._weights[i+1].T) * self._d_activation[i](self._z[i])
 #            print(i, self._a[i].shape, error[i].shape, self._y_batch.shape)
@@ -121,15 +129,20 @@ class NeuralNetwork:
                 batch_indices = np.random.choice(data_indices, size=self._batch_size, replace=False)
 
                 self._X_batch = self._X_data[batch_indices]
-                self._y_batch = self._y_data[batch_indices].reshape(-1, 1)  # TODO: check resample, shapes are weird
+                self._y_batch = (self._y_data[batch_indices].reshape(-1, 1))#.copy()  # TODO: check resample, shapes are weird
                 # TODO: yeah, reshaping changes shit when different batch sizes than 1
-                self._a[0] = self._X_batch  # kinda superfluous to have both this and X_batch
+                self._a[0] = self._X_batch#.copy()  # kinda superfluous to have both this and X_batch
 
+#                print(i, j)
                 self._feed_forward()
+                if self._learning_rate == 'optimal':
+                    self._eta = self._learning_schedule(self._epochs*self._n_minibatch + i)
                 self._back_propagation()
+#                self._loss.append(self._[0])  # to see how loss function goes over time
+
 
     def predict(self, X):
-        self._a[0] = X
+        self._a[0] = X#.copy()
         self._feed_forward()
         return self._output
 

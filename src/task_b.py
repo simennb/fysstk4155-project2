@@ -16,7 +16,6 @@ fig_path = '../figures/'
 data_path = '../datafiles/'
 write_path = '../datafiles/'
 
-p = 15  # degree of polynomial for the task
 scale = [True, False]  # first index is whether to subtract mean, second is to scale by std
 
 test_size = 0.2
@@ -51,14 +50,15 @@ act_func_layers = ['logistic', 'identity']
 # Stochastic gradient descent parameters
 N_epochs = 50  # Number of epochs in SGD
 batch_size = 1  # size of each mini-batch
-N_minibatch = int(N/batch_size)  # Number of mini-batches
+N_minibatch = int(N/batch_size)  # Number of mini-batches  # TODO: DOES NOT TAKE TRAIN TEST SPLIT INTO ACCOUNT
 eta0 = 0.1  # Start training rate
-learning_rate = 'meow'  # constant
+learning_rate = 'optimal'  # constant
+t0 = 5
+t1 = 100
 
 # Benchmark settings
 benchmark = False  # setting to True will adjust all relevant settings for all task
 if benchmark is True:
-    p = 5
     scale = [True, False]
 #    reg_str = 'SGD'  # set to SGD maybe since thats the point of the task
     n_franke = 23
@@ -72,7 +72,7 @@ if benchmark is True:
 
 
 # Printing some information for logging purposes
-fun.print_parameters_franke(seed, N, noise, p, scale, test_size)
+fun.print_parameters_franke(seed, N, noise, 0, scale, test_size)  # TODO: fix p dependence
 
 
 # Randomly generated meshgrid
@@ -92,7 +92,10 @@ y_ravel = np.ravel(y_mesh)
 z_ravel = np.ravel(z_mesh)
 
 # Creating polynomial design matrix
-X = fun.generate_polynomial(x_ravel, y_ravel, p)
+X = np.zeros((x_ravel.shape[0], 2))  # TODO: see if an easier way to do this with meshgrid?
+X[:, 0] = x_ravel
+X[:, 1] = y_ravel
+#X = fun.generate_polynomial(x_ravel, y_ravel, p)
 
 # Split into train and test, and scale data
 X_train, X_test, z_train, z_test = fun.split_data(X, z_ravel, test_size=test_size)
@@ -101,9 +104,12 @@ X_test_scaled = fun.scale_X(X_test, scale)
 #X_scaled = fun.scale_X(X, scale)
 
 lmb = 0.0
+X_train_copy =X_train_scaled.copy()
+X_test_copy = X_test_scaled.copy()
 
 # Create feed-forward neural net
-neural_net = nn.NeuralNetwork(X_train_scaled, z_train, epochs=N_epochs, batch_size=batch_size, eta=eta0, lmb=lmb)
+neural_net = nn.NeuralNetwork(X_train_scaled, z_train, epochs=N_epochs, batch_size=batch_size, eta=eta0, lmb=lmb,
+                              learning_rate=learning_rate, t0=t0, t1=t1)
 for i in range(len(neuron_layers)):
     neural_net.add_layer(neuron_layers[i], act_func_layers[i])
 
@@ -130,12 +136,26 @@ fun.print_MSE_R2(z_test, z_pred, 'test', 'NN')
 
 # Maybe keras?
 neural_net_SKL = MLPRegressor(hidden_layer_sizes=(neuron_layers[0]), activation='logistic', solver='sgd',
-                              alpha=lmb, batch_size=batch_size, learning_rate_init=eta0, max_iter=N_epochs)
+                              alpha=lmb, batch_size=batch_size, learning_rate_init=eta0, max_iter=N_epochs,
+                              momentum=1.0, nesterovs_momentum=False)
 neural_net_SKL.fit(X_train_scaled, z_train)
 
 z_fit = neural_net_SKL.predict(X_train_scaled)
-z_test = neural_net_SKL.predict(X_test_scaled)
+z_pred = neural_net_SKL.predict(X_test_scaled)
 
 print('\nMLPRegressor:')
 fun.print_MSE_R2(z_train, z_fit, 'train', 'NN')
 fun.print_MSE_R2(z_test, z_pred, 'test', 'NN')
+
+fs = 16
+N_loss = len(neural_net._loss)
+i_epochs = [int(i*N_loss/N_epochs) for i in range(N_epochs)]
+indices = np.arange(N_loss)
+plt.plot(indices, neural_net._loss, label='loss')
+plt.plot(i_epochs, [0]*len(i_epochs), '+r', ms=9, label='epochs')
+plt.xlabel('iteration', fontsize=fs)
+plt.ylabel('loss', fontsize=fs)
+plt.title('Loss function over iteration', fontsize=fs)
+plt.grid('on')
+plt.legend()
+plt.show()
