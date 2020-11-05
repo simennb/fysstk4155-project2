@@ -9,6 +9,16 @@ from numba import njit
 # Cost functions
 ################
 
+# From SKL's BaseMultilayerPerceptron._backprop
+'''
+# The calculation of delta[last] here works with following
+# combinations of output activation and loss function:
+# sigmoid and binary cross entropy, softmax and categorical cross
+# entropy, and identity with squared loss
+deltas[last] = activations[-1] - y
+'''
+
+
 #@njit
 def cost_MSE(y, a):
     return np.mean((a - y) ** 2, axis=0, keepdims=True)
@@ -17,7 +27,7 @@ def cost_MSE(y, a):
 def d_cost_MSE(y, a):
 #    print(y.shape, a.shape)
     #return (a-y)**2  # TODO: hmmm
-    return (a - y) * 2
+    return (a - y) * 2  # TODO: look at above, pretty certain im not supposed to have *2 hmm
 #    return np.mean((a - y) ** 2, axis=0, keepdims=True)
 
 

@@ -3,9 +3,9 @@ import sys
 import neuralnet_functions as nn_fun  # TODO: Consider changing name and or making lib folder
 import functions as fun
 
+
 # TODO 03/11: Could remove some redundancy with taking in X_data / y_data in init and self.train
 # TODO: Could maybe make the train parameter optional?
-# TODO: CHECK WHAT KERAS DOES
 class NeuralNetwork:
     """Multilayer Perceptron Model
     MEOW MEOW MEOW MEOW MEOW
@@ -22,7 +22,7 @@ class NeuralNetwork:
     cost_function: string, determines which cost function to use ('MSE' or 'classifier')
     """
     def __init__(self, X_data, y_data, epochs, batch_size, eta, lmb, cost_function,
-                 learning_rate='constant', t0=1.0, t1=10.0,):
+                 learning_rate='constant', t0=1.0, t1=10.0, gradient_scaling=0):
 #        np.random.seed(4155)
 
         self._X_data = X_data
@@ -65,12 +65,21 @@ class NeuralNetwork:
         self._n_features = self._X_data.shape[1]
         self.add_layer(self._n_features, 'identity')
 
-    def add_layer(self, n_neurons, activation='identity', regularization=None, bias_init=0.01, weight_init='Random'):
+        # Gradient scale factor
+        self._set_gradient_scale(gradient_scaling)
+
+    def add_layer(self, n_neurons, activation='identity', regularization=None, bias_init=0.01, wb_init='random'):
         self._n_neurons.append(n_neurons)
         layer_index = len(self._n_neurons) - 1
-        if len(self._weights) != 0:
-            self._weights.append(np.random.randn(self._n_neurons[layer_index - 1], n_neurons))
-            self._bias.append(np.zeros(n_neurons) + bias_init)
+        if self._n_layers != 0:
+            if wb_init == 'random':
+                self._weights.append(np.random.randn(self._n_neurons[layer_index - 1], n_neurons))
+                self._bias.append(np.zeros(n_neurons) + bias_init)
+            elif wb_init == 'glorot':
+                self._weights.append(None)
+                self._bias.append(None)
+#                pass  # i cant actually do this until i know all layers, lol
+#                norm = np.sqrt(6 / (self._n_neurons[layer_index] + self._n_neurons[layer_index + 1]))
         else:
             self._weights.append(None)
             self._bias.append(None)
@@ -85,51 +94,33 @@ class NeuralNetwork:
         self._n_layers += 1
 
     def _feed_forward(self):
-#        print('_feed_forward')
         for i in range(1, self._n_layers):
             self._z[i] = np.matmul(self._a[i-1], self._weights[i]) + self._bias[i]
- #           self._z[i] = self._a[i-1] @ self._weights[i] + self._bias[i]  # identical hmm
             self._a[i] = self._activation[i](self._z[i])
 
         self._output = self._a[-1]  # TODO: ...yes?
 
     def _back_propagation(self):
-#        activations = [X] + [None] * (len(layer_units) - 1)
-#        deltas = [None] * (len(activations) - 1)
-        error = [None] * self._n_layers  #list(range(self._n_layers))  # easier to do it this way
-        weights_gradient = [None] * self._n_layers  #list(range(self._n_layers))
-        bias_gradient = [None] * self._n_layers  #list(range(self._n_layers))
+        error = [None] * self._n_layers
+        weights_gradient = [None] * self._n_layers
+        bias_gradient = [None] * self._n_layers
         for i in range(self._n_layers - 1, 0, -1):
-#            print(i)
             if i == (self._n_layers - 1):
-                # TODO: Wait, this is cost function, right?
-#                error[i] = fun.mean_squared_error(self._y_batch, self._a[i])
-#                error[i] = np.sum((y_data-y_model)**2)/n
-#                error[i] = (self._a[i]-self._y_batch)**2
-#                error[i] = self._a[i] - self._y_batch  # TODO: what?
-#                error[i] = self._output - self._y_batch  # TODO: what?
-#                print(error[i].shape)
-                error[i] = self._d_cost_function(self._y_batch, self._a[i]) #/ self._batch_size
-             #   print(self._a[i].shape, error[i].shape, '_back_prop')
-#                self._loss.append(error[i][0])
+                error[i] = self._d_cost_function(self._y_batch, self._a[i])
+#                error[i] = self._a[i] - self._y_batch
             else:
                 error[i] = np.matmul(error[i+1], self._weights[i+1].T) * self._d_activation[i](self._z[i])
-#            print(i, self._a[i].shape, error[i].shape, self._y_batch.shape)
-#            print('aa', self._a[i], 'bb', error[i], 'cc', self._y_batch)
-            #print(self._a[i].shape, error[i].shape, '_back_prop')
 
-            weights_gradient[i] = np.matmul(self._a[i-1].T, error[i]) / (self._batch_size * self._n_inputs)#self._batch_size  # seems to work
-            bias_gradient[i] = np.sum(error[i], axis=0) / (self._batch_size * self._n_inputs)#self._batch_size
-
-#            print('a ', self._a[i-1].shape, error[i].shape)
-#            print('w ', weights_gradient[i].shape)
-
+            # Regularization
             if self._lmb > 0.0:
                 weights_gradient[i] += self._lmb * self._weights[i]
 
-#        sys.exit(1)
+            # Scale the gradients
+            weights_gradient[i] = np.matmul(self._a[i-1].T, error[i]) / self._gradient_scale
+            bias_gradient[i] = np.sum(error[i], axis=0) / self._gradient_scale
+            # TODO: Do some testing
 
-        # To avoid updating the weights for the layers before all the gradients are calculated
+        # To avoid updating the weights and bias before all the gradients are calculated
         for i in range(self._n_layers - 1, 0, -1):
             self._weights[i] -= self._eta * weights_gradient[i]
             self._bias[i] -= self._eta * bias_gradient[i]
@@ -176,6 +167,17 @@ class NeuralNetwork:
         loss = self._cost_function(self._y_data, y)
 #        print(loss.shape, self._y_data.shape, y.shape)
         return loss[0]
+
+    def _set_gradient_scale(self, gradient_scaling):
+        # TODO: Might be beneficial for testing purposes
+        if gradient_scaling == 0:
+            self._gradient_scale = self._batch_size * self._n_inputs
+        elif gradient_scaling == 1:
+            self._gradient_scale = self._batch_size  # i think this is the most similar to how SKL does it
+        elif gradient_scaling == 2:
+            self._gradient_scale = self._n_inputs
+        else:
+            self._gradient_scale = 1.0
 
     def _init_activation_functions(self):
         self._act_fun_dict = {
