@@ -1,5 +1,5 @@
 import numpy as np
-import functions as fun
+from lib import functions as fun
 
 
 class OrdinaryLeastSquares:

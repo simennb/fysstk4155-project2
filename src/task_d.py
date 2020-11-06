@@ -1,11 +1,3 @@
-import functions as fun
-import regression_methods as reg
-import resampling_methods as res
-import numpy as np
-import matplotlib.pyplot as plt
-import sklearn.linear_model as skl
-import sys
-import neural_network as nn
 from sklearn.neural_network import MLPClassifier
 
 # Check if keras is better, since it has softmax. Not relevant for b, but maybe later

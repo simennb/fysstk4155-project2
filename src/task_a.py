@@ -1,11 +1,7 @@
-import functions as fun
-import regression_methods as reg
-import resampling_methods as res
-import sgd
+from lib import regression_methods as reg, sgd, functions as fun, resampling_methods as res
 import numpy as np
 import matplotlib.pyplot as plt
 import sklearn.linear_model as skl
-import sys
 from sklearn.linear_model import SGDRegressor
 from sklearn.utils.testing import ignore_warnings  # For lasso, maybe remove if no lasso
 from sklearn.exceptions import ConvergenceWarning  # same as above

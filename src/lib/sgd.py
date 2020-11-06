@@ -1,6 +1,6 @@
 import numpy as np
 from numba import njit
-import functions as fun
+from lib import functions as fun
 
 
 # Attempting to speed up the process by using jit.

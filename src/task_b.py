@@ -1,11 +1,6 @@
-import functions as fun
-import regression_methods as reg
-import resampling_methods as res
+from lib import functions as fun, neural_network as nn
 import numpy as np
 import matplotlib.pyplot as plt
-import sklearn.linear_model as skl
-import sys
-import neural_network as nn
 from sklearn.neural_network import MLPRegressor
 
 
@@ -46,6 +41,8 @@ act_output = 'logistic'
 
 neuron_layers = [50, 1]  # number of neurons in each layer, last is output layer
 act_func_layers = ['logistic', 'identity']
+#act_func_layers = ['relu', 'identity']
+
 
 # Stochastic gradient descent parameters
 N_epochs = 50  # Number of epochs in SGD
@@ -93,7 +90,7 @@ x_ravel = np.ravel(x_mesh)
 y_ravel = np.ravel(y_mesh)
 z_ravel = np.ravel(z_mesh)
 
-# Creating polynomial design matrix
+# Creating design matrix
 X = np.zeros((x_ravel.shape[0], 2))  # TODO: see if an easier way to do this with meshgrid?
 X[:, 0] = x_ravel
 X[:, 1] = y_ravel
@@ -115,6 +112,8 @@ neural_net = nn.NeuralNetwork(X_train_scaled, z_train, epochs=N_epochs, batch_si
 for i in range(len(neuron_layers)):
     neural_net.add_layer(neuron_layers[i], act_func_layers[i])
 
+neural_net.initialize_weights_bias(wb_init='glorot')  # that performs worse, hmm
+
 neural_net.fit()
 
 z_fit = neural_net.predict(X_train_scaled)
@@ -123,18 +122,6 @@ z_pred = neural_net.predict(X_test_scaled)
 print('\nNeuralNet:')
 fun.print_MSE_R2(z_train, z_fit, 'train', 'NN')
 fun.print_MSE_R2(z_test, z_pred, 'test', 'NN')
-
-'''
-lecturenet = nn.LectureNetwork(X_train_scaled, z_train, 50, 1, N_epochs, batch_size, eta0, lmb)
-lecturenet.train()
-
-z_fit = lecturenet.predict_probabilities(X_train_scaled)
-z_pred = lecturenet.predict_probabilities(X_test_scaled)
-
-print('\nLectureNet:')
-fun.print_MSE_R2(z_train, z_fit, 'train', 'NN')
-fun.print_MSE_R2(z_test, z_pred, 'test', 'NN')
-'''
 
 # Maybe keras?
 neural_net_SKL = MLPRegressor(hidden_layer_sizes=(neuron_layers[0]), activation='logistic', solver='sgd',

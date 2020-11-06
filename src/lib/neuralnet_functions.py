@@ -73,23 +73,30 @@ def d_sigmoid(z):
 # ReLU
 @njit
 def relu(z):
-    return z if z >= 0 else 0
+#    print(z.shape)
+    return np.where(z >= 0, z, 0)
+#    return z if z >= 0 else 0
 
 
 @njit
 def d_relu(z):
-    return 1 if z >= 0 else 0
+#    res = z >= 0
+#    return 1 if z >= 0 else 0
+    return np.where(z >= 0, 1, 0)
 
 
 # Leaky ReLU
 @njit
 def leaky_relu(z):
-    return z if z >= 0 else 0.01*z
+#    return z if z >= 0 else 0.01*z
+    return np.where(z >= 0, z, 0.01*z)
+
 
 
 @njit
 def d_leaky_relu(z):
-    return 1 if z >= 0 else 0.01
+#    return 1 if z >= 0 else 0.01
+    return np.where(z >= 0, 1, 0.01)
 
 
 # Hyperbolic tangent
@@ -114,7 +121,19 @@ def softmax(z):
 def d_softmax(z):
     # since we use as output this will never be used
     # TODO: look closer at it
-    return z
+    return 0
+
+
+# Heaviside / binary activation function
+@njit
+def heaviside(z):
+    return np.where(z >= 0, 1, 0)
+
+
+@njit
+def d_heaviside(z):
+    # as with softmax, don't see this being used
+    return 0
 
 
 # No activation function

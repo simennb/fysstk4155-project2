@@ -1,10 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.linear_model import SGDRegressor
 from sklearn.neural_network import MLPRegressor
-import neural_network as nn
-import functions as fun
-import sgd
+from lib import sgd, functions as fun, neural_network as nn
 import time
 
 
@@ -51,7 +48,9 @@ def test_FFNN(x, y):
     neural_net.add_layer(N_hidden, 'logistic')
     neural_net.add_layer(1, 'identity')
 
+    ts_own = time.time()
     neural_net.fit()
+    te_own = time.time()
 
     y_fit = neural_net.predict(x_train)
     y_pred = neural_net.predict(x_test)
@@ -62,8 +61,10 @@ def test_FFNN(x, y):
 
     neural_net_SKL = MLPRegressor(hidden_layer_sizes=(N_hidden), activation='logistic', solver='sgd',
                                   alpha=lmb, batch_size=batch_size, learning_rate_init=eta0, max_iter=N_epochs,
-                                  momentum=0.9)#, nesterovs_momentum=False)
+                                  momentum=0.0, nesterovs_momentum=False)
+    ts_skl = time.time()
     neural_net_SKL.fit(x_train, y_train)
+    te_skl = time.time()
 
     y_fit = neural_net_SKL.predict(x_train)
     y_pred = neural_net_SKL.predict(x_test)
@@ -72,59 +73,16 @@ def test_FFNN(x, y):
     fun.print_MSE_R2(y_train, y_fit, 'train', 'NN')
     fun.print_MSE_R2(y_test, y_pred, 'test', 'NN')
 
+    # Timing
+    t_skl = te_skl - ts_skl
+    t_own = te_own - ts_own
+    print('\nTime SKL: %.3e s' % t_skl)
+    print('Time own: %.3e s' % t_own)
+    try:
+        print('Factor own/skl = %.3e' % (t_own/t_skl))
+    except ZeroDivisionError:
+        print('t_skl = 0, t_own = ', t_own)
 
-'''
-m = 100
-x = 2*np.random.rand(m,1)
-y = 4+3*x+np.random.randn(m,1)
-
-X = np.c_[np.ones((m,1)), x]
-theta_linreg = np.linalg.inv(X.T @ X) @ (X.T @ y)
-
-theta = np.random.randn(2,1)
-eta = 0.1
-Niterations = 1000
-
-
-for iter in range(Niterations):
-    gradients = 2.0/m*X.T @ ((X @ theta)-y)
-    theta -= eta*gradients
-print("theta from own gd")
-print(theta)
-
-xnew = np.array([[0],[2]])
-Xnew = np.c_[np.ones((2,1)), xnew]
-ypredict = Xnew.dot(theta)
-ypredict2 = Xnew.dot(theta_linreg)
-
-
-n_epochs = 50
-t0, t1 = 5, 50
-def learning_schedule(t):
-    return t0/(t+t1)
-
-theta = np.random.randn(2,1)
-
-for epoch in range(n_epochs):
-    for i in range(m):
-        random_index = np.random.randint(m)
-        xi = X[random_index:random_index+1]
-        yi = y[random_index:random_index+1]
-        gradients = 2 * xi.T @ ((xi @ theta)-yi)
-        eta = learning_schedule(epoch*m+i)
-        theta = theta - eta*gradients
-print("theta from own sdg")
-print(theta)
-
-plt.plot(xnew, ypredict, "r-")
-plt.plot(xnew, ypredict2, "b-")
-plt.plot(x, y ,'ro')
-plt.axis([0,2.0,0, 15.0])
-plt.xlabel(r'$x$')
-plt.ylabel(r'$y$')
-plt.title(r'Random numbers ')
-plt.show()
-'''
 
 if __name__ == '__main__':
     np.random.seed(100)
@@ -145,6 +103,8 @@ if __name__ == '__main__':
 
     print('STOCHASTIC GRADIENT DESCENT')
     test_SGD(x, y)
+
+    print('\n\n##############################\n\n')
 
     print('NEURAL NETWORK')
     test_FFNN(x, y)

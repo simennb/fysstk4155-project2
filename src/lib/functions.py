@@ -364,6 +364,6 @@ if __name__ == '__main__':
     # Plots the entire terrain map
     terrain_data = '../datafiles/SRTM_data_Norway_3.tif'
     terrain = imread(terrain_data)
-    plot_terrain(terrain, 'Terrain over Norway 3', 'entire_map', '../figures/', 'f', fs=10)
+    plot_terrain(terrain, 'Terrain over Norway 3', 'entire_map', '../../figures/', 'f', fs=10)
 
     plt.show()

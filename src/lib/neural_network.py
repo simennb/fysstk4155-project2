@@ -1,7 +1,6 @@
 import numpy as np
 import sys
-import neuralnet_functions as nn_fun  # TODO: Consider changing name and or making lib folder
-import functions as fun
+from lib import neuralnet_functions as nn_fun
 
 
 # TODO 03/11: Could remove some redundancy with taking in X_data / y_data in init and self.train
@@ -22,7 +21,8 @@ class NeuralNetwork:
     cost_function: string, determines which cost function to use ('MSE' or 'classifier')
     """
     def __init__(self, X_data, y_data, epochs, batch_size, eta, lmb, cost_function,
-                 learning_rate='constant', t0=1.0, t1=10.0, gradient_scaling=0):
+                 learning_rate='constant', t0=1.0, t1=10.0, gradient_scaling=0,
+                 wb_init='random', bias_init=0.01):
 #        np.random.seed(4155)
 
         self._X_data = X_data
@@ -41,7 +41,12 @@ class NeuralNetwork:
         self._t0 = t0
         self._t1 = t1
 
-        # lists etc for the neural network
+        # Weight / bias initialization parameters
+        self._wb_init = wb_init
+        self._bias_init = bias_init
+        # TODO: maybe add weight init?
+
+        # Some of the variables necessary for feedforward/backprop
         self._n_layers = 0
         self._n_neurons = []
         self._weights = []
@@ -54,6 +59,7 @@ class NeuralNetwork:
         self._activation = []
         self._d_activation = []
         self._init_activation_functions()
+        self._initialized = False
 
         # Set cost function
         self._cost_function = None
@@ -68,21 +74,12 @@ class NeuralNetwork:
         # Gradient scale factor
         self._set_gradient_scale(gradient_scaling)
 
-    def add_layer(self, n_neurons, activation='identity', regularization=None, bias_init=0.01, wb_init='random'):
+    def add_layer(self, n_neurons, activation='identity', regularization=None):
         self._n_neurons.append(n_neurons)
-        layer_index = len(self._n_neurons) - 1
-        if self._n_layers != 0:
-            if wb_init == 'random':
-                self._weights.append(np.random.randn(self._n_neurons[layer_index - 1], n_neurons))
-                self._bias.append(np.zeros(n_neurons) + bias_init)
-            elif wb_init == 'glorot':
-                self._weights.append(None)
-                self._bias.append(None)
-#                pass  # i cant actually do this until i know all layers, lol
-#                norm = np.sqrt(6 / (self._n_neurons[layer_index] + self._n_neurons[layer_index + 1]))
-        else:
-            self._weights.append(None)
-            self._bias.append(None)
+
+        # Weights and bias, initialized later
+        self._weights.append(None)
+        self._bias.append(None)
 
         # For easier indexing
         self._a.append(None)
@@ -92,6 +89,27 @@ class NeuralNetwork:
         self._set_activation_function(activation)
 
         self._n_layers += 1
+
+    def initialize_weights_bias(self, wb_init=None, bias_init=None):
+        if wb_init is not None:
+            self._wb_init = wb_init
+        if bias_init is not None:
+            self._bias_init = bias_init
+
+        n_neurons = self._n_neurons
+        if self._wb_init == 'random':
+            for i in range(1, self._n_layers):
+                    self._weights[i] = np.random.randn(n_neurons[i - 1], n_neurons[i])
+                    self._bias[i] = np.zeros(n_neurons[i]) + self._bias_init
+
+        elif self._wb_init == 'glorot':
+            # TODO: this is kinda weird, MLP has different indexing for things
+            for i in range(1, self._n_layers):
+                factor = np.sqrt(6 / (n_neurons[i] + n_neurons[i - 1]))  # sqrt(2) for classification??????????
+                self._weights[i] = np.random.uniform(-factor, factor, (n_neurons[i - 1], n_neurons[i]))
+                self._bias[i] = np.random.uniform(-factor, factor, n_neurons[i])
+
+        self._initialized = True
 
     def _feed_forward(self):
         for i in range(1, self._n_layers):
@@ -131,6 +149,10 @@ class NeuralNetwork:
             self._X_data = X
         if y is not None:
             self._y_data = y
+
+        # Initialize weights and bias unless already done
+        if not self._initialized:
+            self.initialize_weights_bias()
 
         # TODO: Wait, im confused
         # TODO: Do we do minibatches like in SGD or draw with replacement as done in the Lecture neural network?
@@ -186,6 +208,7 @@ class NeuralNetwork:
             'leaky relu': [nn_fun.leaky_relu, nn_fun.d_leaky_relu],
             'tanh': [nn_fun.tanh, nn_fun.d_tanh],
             'softmax': [nn_fun.softmax, nn_fun.d_softmax],
+            'heaviside': [nn_fun.heaviside, nn_fun.d_heaviside],
             'identity': [nn_fun.identity, nn_fun.d_identity]
         }
 
@@ -206,122 +229,6 @@ class NeuralNetwork:
             self._d_activation.append(self._act_fun_dict[activation][1])
         except KeyError:
             sys.exit('Activation function not found. Exiting.')
-
-
-###########################################################
-# From lecture notes week 41, slide 21
-# temporary for easy comparison
-class LectureNetwork:
-    def __init__(
-            self,
-            X_data,
-            Y_data,
-            n_hidden_neurons=50,
-            n_categories=10,
-            epochs=10,
-            batch_size=100,
-            eta=0.1,
-            lmbd=0.0):
-
-        np.random.seed(4155)
-
-        self.X_data_full = X_data
-        self.Y_data_full = Y_data
-
-        self.n_inputs = X_data.shape[0]
-        self.n_features = X_data.shape[1]
-        self.n_hidden_neurons = n_hidden_neurons
-        self.n_categories = n_categories
-
-        self.epochs = epochs
-        self.batch_size = batch_size
-        self.iterations = self.n_inputs // self.batch_size
-        self.eta = eta
-        self.lmbd = lmbd
-
-        self.create_biases_and_weights()
-
-    def create_biases_and_weights(self):
-        self.hidden_weights = np.random.randn(self.n_features, self.n_hidden_neurons)
-        self.hidden_bias = np.zeros(self.n_hidden_neurons) + 0.01
-
-        self.output_weights = np.random.randn(self.n_hidden_neurons, self.n_categories)
-        self.output_bias = np.zeros(self.n_categories) + 0.01
-
-    def feed_forward(self):
-        # feed-forward for training
-        self.z_h = np.matmul(self.X_data, self.hidden_weights) + self.hidden_bias
-        self.a_h = act_fun.sigmoid(self.z_h)
-
-        self.z_o = np.matmul(self.a_h, self.output_weights) + self.output_bias
-
-#        exp_term = np.exp(self.z_o)
-        self.probabilities = self.z_o#exp_term/ np.sum(exp_term, axis=1, keepdims=True)
-
-    def feed_forward_out(self, X):
-        # feed-forward for output
-        z_h = np.matmul(X, self.hidden_weights) + self.hidden_bias
-        a_h = act_fun.sigmoid(z_h)
-
-        z_o = np.matmul(a_h, self.output_weights) + self.output_bias
-
-        exp_term = np.exp(z_o)
-        probabilities = exp_term / np.sum(exp_term, axis=1, keepdims=True)
-        return z_o#probabilities
-
-    def backpropagation(self):
-        error_output = self.probabilities - self.Y_data
-        error_hidden = np.matmul(error_output, self.output_weights.T) * act_fun.d_sigmoid(self.z_h)#* self.a_h * (1 - self.a_h)
-
-        self.output_weights_gradient = np.matmul(self.a_h.T, error_output)
-        self.output_bias_gradient = np.sum(error_output, axis=0)
-
-        self.hidden_weights_gradient = np.matmul(self.X_data.T, error_hidden)
-        self.hidden_bias_gradient = np.sum(error_hidden, axis=0)
-
-        if self.lmbd > 0.0:
-            self.output_weights_gradient += self.lmbd * self.output_weights
-            self.hidden_weights_gradient += self.lmbd * self.hidden_weights
-
-        self.output_weights -= self.eta * self.output_weights_gradient
-        self.output_bias -= self.eta * self.output_bias_gradient
-        self.hidden_weights -= self.eta * self.hidden_weights_gradient
-        self.hidden_bias -= self.eta * self.hidden_bias_gradient
-
-    def predict(self, X):
-        probabilities = self.feed_forward_out(X)
-        return np.argmax(probabilities, axis=1)
-
-    def predict_probabilities(self, X):
-        probabilities = self.feed_forward_out(X)
-        return probabilities
-
-    def train(self, X=None, y=None):
-        data_indices = np.arange(self.n_inputs)
-#        np.random.seed(4155)
-        for i in range(self.epochs):
-            for j in range(self.iterations):
-                # pick datapoints with replacement
-                chosen_datapoints = np.random.choice(
-                    data_indices, size=self.batch_size, replace=False
-                )
-
-                # minibatch training data
-                self.X_data = self.X_data_full[chosen_datapoints]
-                self.Y_data = self.Y_data_full[chosen_datapoints].reshape(-1, 1)
-
-#                print(self.X_data.shape, self.Y_data.shape)
-
-                self.feed_forward()
-#                print(self.z_h, self.z_o)
-#                print(self.a_h, self.probabilities)
-                self.backpropagation()
-#                sys.exit(1)
-
-                if i == -1 and j % 50 == 0:
-                    print('i=%d, j=%d' % (i, j))
-                    print(chosen_datapoints)
-                    print(self.probabilities)
 
 
 if __name__ == '__main__':

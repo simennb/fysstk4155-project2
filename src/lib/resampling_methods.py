@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.model_selection import KFold
-import functions as fun
+from lib import functions as fun
 
 
 class Bootstrap:
