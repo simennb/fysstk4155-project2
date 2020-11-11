@@ -22,6 +22,14 @@ def timeit(method):
         return result
     return timed
 
+
+def time2hms(t):
+    """
+    Converts time given in seconds to hours, minutes and seconds
+    """
+    t_m, t_s = divmod(t, 60)
+    t_h, t_m = divmod(t_m, 60)
+    return t_h, t_m, t_s
 ###########################################################
 
 
@@ -48,6 +56,17 @@ def calculate_R2(y_data, y_model):
     y_model = y_model.reshape(-1, 1)
 
     return 1 - np.sum((y_data - y_model) ** 2) / np.sum((y_data - np.mean(y_data)) ** 2)
+
+
+def accuracy(y_data, y_model):
+    y_data = y_data.reshape(-1, 1)
+    y_model = y_model.reshape(-1, 1)
+    n = len(y_data)
+
+    t = np.argmax(y_model, axis=1)
+    y = np.argmax(y_data, axis=1)
+    res = np.sum(t == y)
+    return res/n
 
 
 def generate_polynomial(x, y, p):

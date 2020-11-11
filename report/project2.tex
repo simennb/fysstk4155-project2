@@ -374,12 +374,20 @@ Then, there is a fairly long function that performs the actual regression over t
 After that, each run mode has its own section of code to call the regression function, and plots/saves the results.
 
 \subsection{Data sets} \label{sec:data_sets}
-In this project, we will be using two different data sets. The first, is the Franke function shown in appendix \ref{app:Franke}. This function is a two-dimensional function that has been widely used for testing implementations for regression and interpolation.
+\red{add something referring to project 1.} In this project, we will be using two different data sets. The first, is the Franke function shown in appendix \ref{app:Franke}. This function is a two-dimensional function that has been widely used for testing implementations for regression and interpolation.
 \\\\
-The second data set is terrain elevation maps taken from \cite{terrain}, and the maps are stored in the GeoTIFF file format, and are from the SRTM Arc-Second Global data set. In the \texttt{datafiles} folder there are three maps, each of one region of Norway, though only one of them, \\\texttt{SRTM\_data\_Norway\_3.tif} is studied in this project. This map is over the south-eastern part of Norway. A plot of the entire map, as well as a more detailed description of the location is given in figure \ref{fig:entiremap} in appendix \ref{app:terrain}.
+%
+\red{MNIST, show example plot of some of the 8x8 images with labels}
+%The second data set is terrain elevation maps taken from \cite{terrain}, and the maps are stored in the GeoTIFF file format, and are from the SRTM Arc-Second Global data set. In the \texttt{datafiles} folder there are three maps, each of one region of Norway, though only one of them, \\\texttt{SRTM\_data\_Norway\_3.tif} is studied in this project. This map is over the south-eastern part of Norway. A plot of the entire map, as well as a more detailed description of the location is given in figure \ref{fig:entiremap} in appendix \ref{app:terrain}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results and discussion} \label{chap:results}
+\red{WE USE CROSS-VALIDATION FOR ALL RESULTS SINCE PROJECT 1 SHOWED THAT IT PERFORMED WELL, AND SINCE IT IS CHEAPER THAN BOOTSTRAP (since less resamples), IT ALLOWS US TO TEST FOR MORE COMBINATIONS OF HYPERPARAMETERS} 
+\\\\
+\red{My understanding is that bootstrapping is a way to quantify the uncertainty in your model while cross validation is used for model selection and measuring predictive accuracy. FROM STATSEXHANGE, check link in sublime. k-fold cross validation is used for two main purposes, to tune hyper parameters and to better evaluate the performance of a model.}
+\\\\
+\red{Hyperparameter search is definitely something that would benefit a lot from parallelizing.}
+\\\\
 In this section, we will be showing some select results from running the code described in Chapter \ref{chap:implement}. More figures and data files, as well as some simpler benchmark runs can be found within their respective folders in the Github repository \cite{Github1}. The results will be split into two sections, the first one pertaining to the Franke function, while the second is the analysis of the terrain data.
 
 \subsection{Franke function}
@@ -392,6 +400,8 @@ test different activation functions
 \subsection{NOT MNIST, or reduced number recognition}
 \red{MEOW}
 
+\red{for simplicity we will be looking at symmetrical hidden layers, as in with identical amount of nodes. This is not necessary, but studying other variations would almost be a project in itself. (maybe find some sources regarding performance)}
+10, 20, 30, 40, 50, 60, 70 nodes in each hidden layer, and (1,2,3,4,5) hidden layers should be plenty. \red{could also have tested with various activation functions throughout, but also a lot of extra work, and would ideally look closer at literature for that in order to see what has already been discovered regarding it}
 \subsubsection{Classification with Neural Network}
 
 \subsubsection{Logistic regression}

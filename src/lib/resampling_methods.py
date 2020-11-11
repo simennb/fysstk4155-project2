@@ -53,22 +53,27 @@ class Bootstrap:
 
 
 class CrossValidation:
-    def __init__(self, X, y, reg_obj):
+    def __init__(self, X, y, reg_obj, stat=None):
         """
         :param X: Design matrix
         :param y: data
         :param reg_obj: object that has the functions fit() and predict(), for doing regression
+        :param stat: list, contains functions to compute results with
         """
         self.X = X
         self.y = y
         self.reg = reg_obj
+        if stat is None:
+            self.stat = [fun.mean_squared_error]
+        else:
+            self.stat = stat
 
     def compute(self, K):
         """
         Computes K cross-validations.
         """
-        error_train = np.zeros(K)
-        error_test = np.zeros(K)
+        error_train = np.zeros((K, len(self.stat)))
+        error_test = np.zeros(error_train.shape)
 
         index = np.arange(len(self.y))
         np.random.shuffle(index)
@@ -79,14 +84,18 @@ class CrossValidation:
         for i in range(K):
             X_train, X_test, y_train, y_test = self.split(X, y, K, i)
 
+#            print('K = ', i)
+#            print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
+
             self.reg.fit(X_train, y_train)
             y_fit = self.reg.predict(X_train)
             y_pred = self.reg.predict(X_test)
 
-            error_train[i] = np.mean((y_train - y_fit) ** 2)
-            error_test[i] = np.mean((y_test - y_pred) ** 2)
+            for j in range(len(self.stat)):
+                error_train[i, j] = self.stat[j](y_train, y_fit)
+                error_test[i, j] = self.stat[j](y_test, y_pred)
 
-        return np.mean(error_train), np.mean(error_test)
+        return np.mean(error_train, axis=0), np.mean(error_test, axis=0)
 
     def split(self, X, y, K, i):
         """

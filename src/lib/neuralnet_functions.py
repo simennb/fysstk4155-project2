@@ -9,48 +9,17 @@ from numba import njit
 # Cost functions
 ################
 
-# From SKL's BaseMultilayerPerceptron._backprop
-'''
-# The calculation of delta[last] here works with following
-# combinations of output activation and loss function:
-# sigmoid and binary cross entropy, softmax and categorical cross
-# entropy, and identity with squared loss
-deltas[last] = activations[-1] - y
-'''
-
-
-#@njit
 def cost_MSE(y, a):
-    return np.mean((a - y) ** 2, axis=0, keepdims=True)
-
-
-def d_cost_MSE(y, a):
-#    print(y.shape, a.shape)
-    #return (a-y)**2  # TODO: hmmm
-    return (a - y) * 2  # TODO: look at above, pretty certain im not supposed to have *2 hmm
-#    return np.mean((a - y) ** 2, axis=0, keepdims=True)
+    return np.mean((a - y) ** 2, axis=0) / 2
 
 
 # check p. 195 ish av aurelion geron
-@njit
-def cost_LogLoss(y_data, y_model):
-    pass
-
-
-@njit
-def d_cost_LogLoss(y_data, y_model):
-    pass
-
+# Log loss is the same as cross-entropy, right?
+# Cross entropy = log loss in binary cases OK
 
 # Cross-Entropy
-@njit
-def cost_CrossEntropy(y_data, y_model):
-    pass
-
-
-@njit
-def d_cost_CrossEntropy(y_data, y_model):
-    pass
+def cost_CrossEntropy(y, a):
+    return - np.sum(y * np.log(a), axis=0)  # ????
 
 
 ######################
@@ -65,7 +34,6 @@ def sigmoid(z):
 
 @njit
 def d_sigmoid(z):
-    # Could speed up by giving in a instead of z, but probably better to make NN code as general as possible
     a = sigmoid(z)
     return a*(1-a)
 
@@ -73,29 +41,23 @@ def d_sigmoid(z):
 # ReLU
 @njit
 def relu(z):
-#    print(z.shape)
     return np.where(z >= 0, z, 0)
-#    return z if z >= 0 else 0
 
 
 @njit
 def d_relu(z):
-#    res = z >= 0
-#    return 1 if z >= 0 else 0
     return np.where(z >= 0, 1, 0)
 
 
 # Leaky ReLU
 @njit
 def leaky_relu(z):
-#    return z if z >= 0 else 0.01*z
     return np.where(z >= 0, z, 0.01*z)
 
 
 
 @njit
 def d_leaky_relu(z):
-#    return 1 if z >= 0 else 0.01
     return np.where(z >= 0, 1, 0.01)
 
 
@@ -111,7 +73,6 @@ def d_tanh(z):
 
 
 # Softmax
-#@njit
 def softmax(z):
     exp_term = np.exp(z)
     return exp_term / np.sum(exp_term, axis=1, keepdims=True)
@@ -121,18 +82,8 @@ def softmax(z):
 def d_softmax(z):
     # since we use as output this will never be used
     # TODO: look closer at it
-    return 0
-
-
-# Heaviside / binary activation function
-@njit
-def heaviside(z):
-    return np.where(z >= 0, 1, 0)
-
-
-@njit
-def d_heaviside(z):
-    # as with softmax, don't see this being used
+    # TODO: lecture notes week 41, slide 7
+    # np.kron()
     return 0
 
 

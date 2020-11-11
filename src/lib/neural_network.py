@@ -18,7 +18,7 @@ class NeuralNetwork:
     batch_size:
     eta:
     lmb:
-    cost_function: string, determines which cost function to use ('MSE' or 'classifier')
+    cost_function: string, determines which cost function to use ('MSE' or 'CE')
     """
     def __init__(self, X_data, y_data, epochs, batch_size, eta, lmb, cost_function,
                  learning_rate='constant', t0=1.0, t1=10.0, gradient_scaling=0,
@@ -26,7 +26,7 @@ class NeuralNetwork:
 #        np.random.seed(4155)
 
         self._X_data = X_data
-        self._y_data = y_data.reshape(-1, 1)
+        self._y_data = y_data
         self._epochs = epochs
         self._batch_size = batch_size
         self._lmb = lmb
@@ -60,10 +60,11 @@ class NeuralNetwork:
         self._d_activation = []
         self._init_activation_functions()
         self._initialized = False
+        self._weights_start = None
+        self._bias_start = None
 
         # Set cost function
         self._cost_function = None
-        self._d_cost_function = None
         self._set_cost_function(cost_function)
 
         # Create the input layer
@@ -96,19 +97,34 @@ class NeuralNetwork:
         if bias_init is not None:
             self._bias_init = bias_init
 
-        n_neurons = self._n_neurons
-        if self._wb_init == 'random':
-            for i in range(1, self._n_layers):
-                    self._weights[i] = np.random.randn(n_neurons[i - 1], n_neurons[i])
-                    self._bias[i] = np.zeros(n_neurons[i]) + self._bias_init
+        if not self._initialized:
+            n_neurons = self._n_neurons
 
-        elif self._wb_init == 'glorot':
-            # TODO: this is kinda weird, MLP has different indexing for things
-            for i in range(1, self._n_layers):
-                factor = np.sqrt(6 / (n_neurons[i] + n_neurons[i - 1]))  # sqrt(2) for classification??????????
-                self._weights[i] = np.random.uniform(-factor, factor, (n_neurons[i - 1], n_neurons[i]))
-                self._bias[i] = np.random.uniform(-factor, factor, n_neurons[i])
+            # TODO: [0.02711087 0.59226773][0.02708315 0.58659946] WITHOUT
+            # TODO: [0.02290557 0.65484501][0.02377248 0.63792649] WITH
+            # TODO: So definitely a slight difference, and keeping them identical
+            # TODO: makes the results more in line with the results from first run
+            # Doing so that each fold (with CV) uses same initialization of weights and bias
+            # So that the only thing that varies between them is the data set.
+            # One could argue that doing so for all hyperparameter combinations would also
+            # be TODO
+            self._weights_start = [None] * self._n_layers
+            self._bias_start = [None] * self._n_layers
+            if self._wb_init == 'random':
+                for i in range(1, self._n_layers):
+                    self._weights_start[i] = np.random.randn(n_neurons[i - 1], n_neurons[i])
+                    self._bias_start[i] = np.zeros(n_neurons[i]) + self._bias_init
 
+            elif self._wb_init == 'glorot':
+                # TODO: this is kinda weird, MLP has different indexing for things
+                for i in range(1, self._n_layers):
+                    factor = np.sqrt(6 / (n_neurons[i] + n_neurons[i - 1]))  # sqrt(2) for classification??????????
+                    self._weights_start[i] = np.random.uniform(-factor, factor, (n_neurons[i - 1], n_neurons[i]))
+                    self._bias_start[i] = np.random.uniform(-factor, factor, n_neurons[i])
+
+        for i in range(1, self._n_layers):
+            self._weights[i] = self._weights_start[i].copy()
+            self._bias[i] = self._bias_start[i].copy()
         self._initialized = True
 
     def _feed_forward(self):
@@ -124,18 +140,22 @@ class NeuralNetwork:
         bias_gradient = [None] * self._n_layers
         for i in range(self._n_layers - 1, 0, -1):
             if i == (self._n_layers - 1):
-                error[i] = self._d_cost_function(self._y_batch, self._a[i])
-#                error[i] = self._a[i] - self._y_batch
+                # For output activation / cost function combinations of identity/MSE and softmax/CE this is correct.
+                error[i] = self._a[i] - self._y_batch
             else:
                 error[i] = np.matmul(error[i+1], self._weights[i+1].T) * self._d_activation[i](self._z[i])
 
-            # Regularization
+            # Compute the gradients
+            weights_gradient[i] = np.matmul(self._a[i-1].T, error[i])
+            bias_gradient[i] = np.sum(error[i], axis=0)
+
+            # L2 Regularization
             if self._lmb > 0.0:
                 weights_gradient[i] += self._lmb * self._weights[i]
 
             # Scale the gradients
-            weights_gradient[i] = np.matmul(self._a[i-1].T, error[i]) / self._gradient_scale
-            bias_gradient[i] = np.sum(error[i], axis=0) / self._gradient_scale
+            weights_gradient[i] /= self._gradient_scale
+            bias_gradient[i] /= self._gradient_scale
             # TODO: Do some testing
 
         # To avoid updating the weights and bias before all the gradients are calculated
@@ -147,48 +167,60 @@ class NeuralNetwork:
         # To make behavior more like SKL MLPRegressor/MLPClassifier
         if X is not None:
             self._X_data = X
+            self._n_inputs = self._X_data.shape[0]
         if y is not None:
             self._y_data = y
 
         # Initialize weights and bias unless already done
-        if not self._initialized:
-            self.initialize_weights_bias()
+#        if not self._initialized:
+        self.initialize_weights_bias()
 
         # TODO: Wait, im confused
         # TODO: Do we do minibatches like in SGD or draw with replacement as done in the Lecture neural network?
         # Divide into mini batches and do SGD
         data_indices = np.arange(self._n_inputs)
         for i in range(self._epochs):
+#            print('epoch = ', i)
+            accumulated_loss = 0  # trying to do this as SKL does
             for j in range(self._n_minibatch):
                 # pick datapoints with replacement
                 batch_indices = np.random.choice(data_indices, size=self._batch_size, replace=False)
 
                 self._X_batch = self._X_data[batch_indices]
-                self._y_batch = (self._y_data[batch_indices])#.reshape(-1, 1))#.copy()  # TODO: check resample, shapes are weird
-                # TODO: yeah, reshaping changes shit when different batch sizes than 1
+                self._y_batch = (self._y_data[batch_indices])
                 self._a[0] = self._X_batch#.copy()  # kinda superfluous to have both this and X_batch
 
 #                print(i, j)
                 self._feed_forward()
+                accumulated_loss += self._compute_loss() * self._batch_size  # Batch loss
                 if self._learning_rate == 'optimal':
                     self._eta = self._learning_schedule(self._epochs*self._n_minibatch + i)
                 self._back_propagation()
 #                self._loss.append(self._[0])  # to see how loss function goes over time
-            self._loss.append(self._compute_loss())
+            self._loss.append(accumulated_loss / self._n_inputs)
 
     def predict(self, X):
         self._a[0] = X#.copy()
         self._feed_forward()
         return self._output
 
+#    def score(self, X_test, y_test):
+#        y_pred = self.predict(X_test)
+
     def _learning_schedule(self, t):
         return self._t0 / (t + self._t1)
 
     def _compute_loss(self):
-        y = self.predict(self._X_data)
-        loss = self._cost_function(self._y_data, y)
-#        print(loss.shape, self._y_data.shape, y.shape)
+        loss = self._cost_function(self._y_batch, self._a[-1])
+
+        # L2 Regularization
+        values = np.sum(np.array([np.dot(s.ravel(), s.ravel()) for s in self._weights[1:]]))
+        loss += (0.5 * self._lmb) * values / self._batch_size
+
         return loss[0]
+
+    def _set_data(self, X, y):
+        pass
 
     def _set_gradient_scale(self, gradient_scaling):
         # TODO: Might be beneficial for testing purposes
@@ -208,20 +240,14 @@ class NeuralNetwork:
             'leaky relu': [nn_fun.leaky_relu, nn_fun.d_leaky_relu],
             'tanh': [nn_fun.tanh, nn_fun.d_tanh],
             'softmax': [nn_fun.softmax, nn_fun.d_softmax],
-            'heaviside': [nn_fun.heaviside, nn_fun.d_heaviside],
             'identity': [nn_fun.identity, nn_fun.d_identity]
         }
 
     def _set_cost_function(self, cost_function):
         if cost_function == 'MSE':
             self._cost_function = nn_fun.cost_MSE
-            self._d_cost_function = nn_fun.d_cost_MSE
-        elif cost_function == 'LogLoss':
-            self._cost_function = nn_fun.cost_LogLoss
-            self._d_cost_function = nn_fun.d_cost_LogLoss
-        elif cost_function == 'CrossEntropy':
+        elif cost_function == 'CE':
             self._cost_function = nn_fun.cost_CrossEntropy
-            self._d_cost_function = nn_fun.d_cost_CrossEntropy
 
     def _set_activation_function(self, activation):
         try:

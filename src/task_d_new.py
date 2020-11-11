@@ -72,7 +72,7 @@ lmb = 0.0  # TODO: move
 
 # Create feed-forward neural net
 neural_net = nn.NeuralNetwork(X_train, y_train, epochs=N_epochs, batch_size=batch_size, eta=eta0, lmb=lmb,
-                              cost_function='CE', learning_rate=learning_rate, t0=t0, t1=t1, gradient_scaling=1)
+                              cost_function='MSE', learning_rate=learning_rate, t0=t0, t1=t1, gradient_scaling=1)
 for i in range(len(neuron_layers)):
     neural_net.add_layer(neuron_layers[i], act_func_layers[i])
 
@@ -99,8 +99,7 @@ print(accuracy(y_pred, y_test))
 
 ##################################
 neural_net_SKL = MLPClassifier(hidden_layer_sizes=(neuron_layers[0]), activation='logistic', solver='sgd',
-                               alpha=lmb, batch_size=batch_size, learning_rate_init=eta0, max_iter=N_epochs,#)
-                               momentum=0.0, nesterovs_momentum=False)
+                               alpha=lmb, batch_size=batch_size, learning_rate_init=eta0, max_iter=N_epochs)
 #neural_net_SKL = MLPClassifier(activation='logistic', solver='sgd',
 #                               alpha=lmb, batch_size=batch_size, learning_rate_init=1e-1, max_iter=200
 #                               , learning_rate='invscaling')
@@ -113,18 +112,18 @@ print('SKL')
 print(accuracy(y_fit, y_train))
 print(accuracy(y_pred, y_test))
 
-#print(neural_net_SKL.score(X_train, y_train))
-#print(neural_net_SKL.score(X_test, y_test))
+print(neural_net_SKL.score(X_train, y_train))
+print(neural_net_SKL.score(X_test, y_test))
 
 loss_SKL = neural_net_SKL.loss_curve_
 
 #########################################
 plt.figure()
 fs = 16
-N_loss = len(neural_net._loss)
-i_epochs = [int(i*N_loss/N_epochs) for i in range(N_epochs)]
-indices = np.arange(N_loss)
-plt.plot(indices, neural_net._loss, label='NeuralNet')
+#N_loss = len(neural_net._loss)
+#i_epochs = [int(i*N_loss/N_epochs) for i in range(N_epochs)]
+#indices = np.arange(N_loss)
+#plt.plot(indices, neural_net._loss, label='NeuralNet')
 plt.plot(range(len(loss_SKL)), loss_SKL, label='MLPRegressor')
 #plt.plot(i_epochs, [0]*len(i_epochs), '+r', ms=9, label='epochs')
 plt.xlabel('epoch', fontsize=fs)

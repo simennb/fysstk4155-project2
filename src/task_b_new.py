@@ -1,8 +1,9 @@
 from lib import functions as fun, neural_network as nn
 import numpy as np
 import matplotlib.pyplot as plt
+from perform_analysis import PerformAnalysis
 from sklearn.neural_network import MLPRegressor
-from lib import resampling_methods as res
+
 
 run_mode = 'b'
 data = 'franke'
@@ -11,51 +12,70 @@ fig_path = '../figures/'
 data_path = '../datafiles/'
 write_path = '../datafiles/'
 
+name = 'meow'
+
 scale = [True, False]  # first index is whether to subtract mean, second is to scale by std
 test_size = 0.2
 
-# Regression method
-#reg_str = 'OLS'
-#reg_str = 'Ridge'
-#reg_str = 'Lasso'  # probably not needed
-#reg_str = 'SGD'
-#reg_str = 'SGD_SKL'
+# Hyperparameters to loop over
+'''
+n_epochs = 50  # Number of epochs in SGD
+batch_size = 10  # Size of each mini-batch
+eta0 = 0.1  # Start training rate
+lambdas = np.array([0.0])  # Regularization
+n_hidden_neurons = 50  # Number of neurons in hidden layers
+n_hidden_layers = 1  # Number of hidden layers
+'''
 
-# Creating data set for the Franke function tasks
+# TODO: maybe linspace/logspace
+# I suspect this will take a while
+'''
+n_epochs = np.array([25, 50, 75, 100, 200], dtype=int)  # Number of epochs in SGD
+batch_size = np.array([1, 5, 10, 50, 100], dtype=int)  # Size of each mini-batch
+eta0 = np.array([1e-5, 1e-4, 1e-3, 1e-2, 1e-1])  # Start training rate
+lambdas = np.array([0.0, 1e-1, 1e-2, 1e-3, 1e-4])  # Regularization
+n_hidden_neurons = np.array([25, 50, 75, 100, 200], dtype=int)  # Number of neurons in hidden layers
+n_hidden_layers = np.array([1, 2, 3, 4, 5], dtype=int)  # Number of hidden layers
+'''
+'''
+n_epochs = [25, 50, 75, 100, 200]  # Number of epochs in SGD
+batch_size = [1, 5, 10, 50, 100]  # Size of each mini-batch
+eta0 = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]  # Start training rate
+lambdas = [0.0, 1e-1, 1e-2, 1e-3, 1e-4]  # Regularization
+n_hidden_neurons = [25, 50, 75, 100, 200]  # Number of neurons in hidden layers
+n_hidden_layers = [1, 2, 3, 4, 5]  # Number of hidden layers
+'''
+
+n_epochs = [50]  # Number of epochs in SGD
+batch_size = [1, 5, 10]  # Size of each mini-batch
+eta0 = [1e-1]  # Start training rate
+lambdas = [0.0]  # Regularization
+n_hidden_neurons = [25, 50]  # Number of neurons in hidden layers
+n_hidden_layers = [1, 2]  # Number of hidden layers
+
+# Franke function data set parameters
 seed = 4155
 n_franke = 23  # 529 points
 N = n_franke**2  # Total number of samples n*2
 noise = 0.05  # noise level
 
-# Bootstrap and CV variables
-N_bootstraps = 100#int(N / 2)  # number of resamples (ex. N/2, N/4)
+# Cross-validation
 K = 5
 
 # Neural net parameters
-n_hidden = 1
-nodes_hidden = 50
-act_hidden = 'logistic'
+act_hidden = 'logistic'  # 'logistic', 'relu', 'tanh', 'leaky relu'
 act_output = 'identity'
-
-neuron_layers = [nodes_hidden] * n_hidden + [1]  # list of neurons in each layer (minus input layer)
-act_func_layers = [act_hidden] * n_hidden + [act_output]
+wb_init = 'random'  # 'random' or 'glorot' TODO: Maybe add zero?
 
 # Stochastic gradient descent parameters
-N_epochs = 50  # Number of epochs in SGD
-batch_size = 1  # size of each mini-batch
-N_minibatch = int(N/batch_size)  # Number of mini-batches  # TODO: DOES NOT TAKE TRAIN TEST SPLIT INTO ACCOUNT
-eta0 = 0.1  # Start training rate
-#learning_rate = 'optimal'  # constant
-learning_rate = 'constant'
+learning_rate = 'constant'  # 'optimal'
+t0 = 1  # relevant if learning_rate set to 'optimal'
+t1 = 5  # relevant if learning_rate set to 'optimal'
 
-t0 = 1
-t1 = 5
-
-# Benchmark settings
+# TODO: Benchmark settings / Figure out
 benchmark = False  # setting to True will adjust all relevant settings for all task
 if benchmark is True:
     scale = [True, False]
-#    reg_str = 'SGD'  # set to SGD maybe since thats the point of the task
     n_franke = 23
     N = 529
     noise = 0.05
@@ -69,7 +89,7 @@ if benchmark is True:
 # Printing some information for logging purposes
 fun.print_parameters_franke(seed, N, noise, 0, scale, test_size)  # TODO: fix p dependence
 
-
+# Create data set
 # Randomly generated meshgrid
 np.random.seed(seed)
 x = np.sort(np.random.uniform(0.0, 1.0, n_franke))
@@ -87,32 +107,37 @@ y_ravel = np.ravel(y_mesh)
 z_ravel = np.ravel(z_mesh)
 print(z_ravel.shape)
 z = z_ravel.reshape(-1, 1)
-#print(z_ravel.shape)
 
 # Creating design matrix
-X = np.zeros((x_ravel.shape[0], 2))  # TODO: see if an easier way to do this with meshgrid?
+X = np.zeros((x_ravel.shape[0], 2))  # TODO: maybe easier way
 X[:, 0] = x_ravel
 X[:, 1] = y_ravel
-#X = fun.generate_polynomial(x_ravel, y_ravel, p)
 
 # Split into train and test, and scale data
-X_train, X_test, z_train, z_test = fun.split_data(X, z, test_size=test_size)
-X_train_scaled = fun.scale_X(X_train, scale)
-X_test_scaled = fun.scale_X(X_test, scale)
-X_scaled = fun.scale_X(X, scale)
+#X_train, X_test, z_train, z_test = fun.split_data(X, z, test_size=test_size)
+#X_train_scaled = fun.scale_X(X_train, scale)
+#X_test_scaled = fun.scale_X(X_test, scale)
+#X_scaled = fun.scale_X(X, scale)
 
-lmb = 0.0#1
-X_train_copy = X_train_scaled.copy()
-X_test_copy = X_test_scaled.copy()
+#X_train_copy =X_train_scaled.copy()
+#X_test_copy = X_test_scaled.copy()
 
+# TODO #######################################################
+# TODO #######################################################
+analysis = PerformAnalysis('regression', 'neuralnet', learning_rate, name, CV=True, K=5, t0=t0, t1=t1)#, SKL=0)
+analysis.set_hyperparameters(n_epochs, batch_size, eta0, lambdas, n_hidden_neurons, n_hidden_layers)
+analysis.set_neural_net_params(act_hidden, act_output, wb_init)
+analysis.set_data(X, z, test_size=test_size, scale=scale)
+analysis.run()
+
+'''
 # Create feed-forward neural net
 neural_net = nn.NeuralNetwork(X_train_scaled, z_train, epochs=N_epochs, batch_size=batch_size, eta=eta0, lmb=lmb,
-                              cost_function='MSE', learning_rate=learning_rate, t0=t0, t1=t1, gradient_scaling=1,
-                              wb_init='glorot')
+                              cost_function='MSE', learning_rate=learning_rate, t0=t0, t1=t1, gradient_scaling=1)
 for i in range(len(neuron_layers)):
     neural_net.add_layer(neuron_layers[i], act_func_layers[i])
 
-#neural_net.initialize_weights_bias(wb_init='glorot')  # Gives very similar results to SKL
+neural_net.initialize_weights_bias(wb_init='glorot')  # that performs worse, hmm
 
 neural_net.fit()
 
@@ -140,14 +165,6 @@ print(len(neural_net_SKL.loss_curve_))
 loss_SKL = neural_net_SKL.loss_curve_
 
 #########################################
-
-#neural_net.initialize_weights_bias(wb_init='glorot')  # Gives very similar results to SKL
-CV = res.CrossValidation(X_scaled, z_ravel, neural_net, stat=[fun.mean_squared_error, fun.calculate_R2])
-#CV = res.CrossValidation(X, y, neural_net_SKL, stat=[fun.mean_squared_error, fun.calculate_R2])
-error_train, error_test = CV.compute(K=5)
-print(error_train, error_test)
-#[0.01610957 0.84249185] [0.01620809 0.64487109]
-
 fs = 16
 N_loss = len(neural_net._loss)
 #i_epochs = [int(i*N_loss/N_epochs) for i in range(N_epochs)]
@@ -161,3 +178,4 @@ plt.title('Loss function over epoch', fontsize=fs)
 plt.grid('on')
 plt.legend()
 plt.show()
+'''
