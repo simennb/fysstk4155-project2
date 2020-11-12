@@ -42,7 +42,7 @@ act_func_layers = [act_hidden] * n_hidden + [act_output]
 
 # Stochastic gradient descent parameters
 N_epochs = 50  # Number of epochs in SGD
-batch_size = 1  # size of each mini-batch
+batch_size = 5  # size of each mini-batch
 N_minibatch = int(N/batch_size)  # Number of mini-batches  # TODO: DOES NOT TAKE TRAIN TEST SPLIT INTO ACCOUNT
 eta0 = 0.1  # Start training rate
 #learning_rate = 'optimal'  # constant

@@ -19,7 +19,14 @@ def cost_MSE(y, a):
 
 # Cross-Entropy
 def cost_CrossEntropy(y, a):
-    return - np.sum(y * np.log(a), axis=0)  # ????
+#    print(y.shape, a.shape)
+#    res = - np.sum(y * np.log(a), axis=1)
+#    print(res)
+#    input()
+#    return - np.sum(y * np.log(a), axis=1) #/ a.shape[0]  # ????
+    res = - np.sum(y * np.log(a), axis=1)
+    return np.mean(res)
+#    return - np.sum(y * np.log(a), axis=1) / a.shape[0]  # ????
 
 
 ######################

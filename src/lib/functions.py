@@ -59,13 +59,18 @@ def calculate_R2(y_data, y_model):
 
 
 def accuracy(y_data, y_model):
-    y_data = y_data.reshape(-1, 1)
-    y_model = y_model.reshape(-1, 1)
+#    print(y_data.shape, y_model.shape)
+#    y_data = y_data.reshape(-1, 1)
+#    y_model = y_model.reshape(-1, 1)
     n = len(y_data)
+#    print(y_data.shape, y_model.shape)
 
     t = np.argmax(y_model, axis=1)
+#    print(t[0:10])
+
     y = np.argmax(y_data, axis=1)
     res = np.sum(t == y)
+#    print(t, y)
     return res/n
 
 
@@ -280,7 +285,7 @@ def plot_degree_lambda(polydegree, lambdas, title, save, fig_path, task, fs=14):
     plt.savefig(fig_path+'task_%s/degree_lambda_%s.png' % (task, save))
 
 
-def plot_heatmap(x, y, z, zlab, title, save, fig_path, task, fs=14):
+def plot_heatmap(x, y, z, xlab, ylab, zlab, title, save, fig_path, task, fs=14):
     fig, ax = plt.subplots()
 
     heatmap = ax.pcolor(z)
@@ -296,8 +301,8 @@ def plot_heatmap(x, y, z, zlab, title, save, fig_path, task, fs=14):
     ax.set_yticklabels(yticks, fontsize=10)
 
     cbar.ax.set_title(zlab)#, fontsize=fs)
-    ax.set_xlabel(r'$\lambda$', fontsize=fs)
-    ax.set_ylabel(r'Polynomial degree $p$', fontsize=fs)
+    ax.set_xlabel(r'%s' % xlab, fontsize=fs)
+    ax.set_ylabel(r'%s' % ylab, fontsize=fs)
     ax.set_title(title, fontsize=fs)
     plt.tight_layout()
     plt.savefig(fig_path+'task_%s/heatmap_%s.png' % (task, save))

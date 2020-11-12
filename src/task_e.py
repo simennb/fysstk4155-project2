@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.neural_network import MLPClassifier
 from sklearn import datasets
+import lib.sgd as sgd
 
 run_mode = 'd'
 data = 'mnist'
@@ -29,32 +30,11 @@ n_labels = 10
 X = inputs.reshape(n_inputs, -1)
 y = np.zeros((n_inputs, n_labels))
 y[np.arange(n_inputs), labels] = 1
-
-# Plot a few randomly selected images from the dataset
-# TODO: move into function
-indices = np.arange(n_inputs)
-random_indices = np.random.choice(indices, size=5)
-for i, image in enumerate(digits.images[random_indices]):
-    plt.subplot(1, 5, i+1)
-    plt.axis('off')
-    plt.imshow(image, cmap=plt.cm.gray_r, interpolation='nearest')
-    plt.title("Label: %d" % digits.target[random_indices[i]])
-#    plt.savefig()
-
-# Neural net parameters
-n_hidden = 1
-nodes_hidden = 50
-act_hidden = 'logistic'
-act_output = 'softmax'
-
-# Lists containing amount of neurons and activation functions for all layers (minus input layer)
-neuron_layers = [nodes_hidden] * n_hidden + [n_labels]
-act_func_layers = [act_hidden] * n_hidden + [act_output]
+#print(y)
 
 # Stochastic gradient descent parameters
-N_epochs = 50  # Number of epochs in SGD
-batch_size = 10  # size of each mini-batch
-#N_minibatch = int(N/batch_size)  # Number of mini-batches  # TODO: DOES NOT TAKE TRAIN TEST SPLIT INTO ACCOUNT
+N_epochs = 1  # Number of epochs in SGD
+batch_size = 1  # size of each mini-batch
 eta0 = 0.001  # Start training rate
 #learning_rate = 'optimal'  # constant
 learning_rate = 'constant'
@@ -64,26 +44,33 @@ t1 = 5
 
 # Split into train and test, and scale data
 X_train, X_test, y_train, y_test = fun.split_data(X, y, test_size=test_size)
-#X_train_scaled = fun.scale_X(X_train, scale)
-#X_test_scaled = fun.scale_X(X_test, scale)
+X_train_scaled = fun.scale_X(X_train, scale)
+X_test_scaled = fun.scale_X(X_test, scale)
 #X_scaled = fun.scale_X(X, scale)
+#print('AAAAAAAAAAAAAAAAAAAA', y_train[0:10])
 
 lmb = 0.0  # TODO: move
 
-# Create feed-forward neural net
-neural_net = nn.NeuralNetwork(X_train, y_train, epochs=N_epochs, batch_size=batch_size, eta=eta0, lmb=lmb,
-                              cost_function='CE', learning_rate=learning_rate, t0=t0, t1=t1, gradient_scaling=1)
-for i in range(len(neuron_layers)):
-    neural_net.add_layer(neuron_layers[i], act_func_layers[i])
+logreg = sgd.LogRegSGD(n_epochs=N_epochs, n_labels=n_labels, batch_size=batch_size, eta0=eta0,
+                       learning_rate=learning_rate)
+logreg.set_step_length(t0=t0, t1=t1)
+logreg.set_lambda(lmb)
 
-#neural_net.initialize_weights_bias(wb_init='glorot')  # that performs worse, NOT WITH CLASSIFICATION!
+logreg.fit(X_train_scaled, y_train)
 
-neural_net.fit()
+y_fit = logreg.predict(X_train_scaled)
+y_pred = logreg.predict(X_test_scaled)
 
-y_fit = neural_net.predict(X_train)
-y_pred = neural_net.predict(X_test)
+#print('BBBBBBBBBBBBBBBBBBBBB', y_train[0:10])
+#print('CCCCCCCCCCCCCCCCCCCCC', y_fit[0:10])
 
 
+#print(y_fit)
+
+print(fun.accuracy(y_fit, y_train))
+print(fun.accuracy(y_pred, y_test))
+
+'''
 
 def accuracy(y_data, y_model):
     n = len(y_data)
@@ -113,8 +100,8 @@ print('SKL')
 print(accuracy(y_fit, y_train))
 print(accuracy(y_pred, y_test))
 
-print(neural_net_SKL.score(X_train, y_train))
-print(neural_net_SKL.score(X_test, y_test))
+#print(neural_net_SKL.score(X_train, y_train))
+#print(neural_net_SKL.score(X_test, y_test))
 
 loss_SKL = neural_net_SKL.loss_curve_
 
@@ -138,6 +125,7 @@ plt.legend()
 
 
 plt.show()
+'''
 
 '''
 ###############################################

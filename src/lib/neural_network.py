@@ -21,7 +21,7 @@ class NeuralNetwork:
     cost_function: string, determines which cost function to use ('MSE' or 'CE')
     """
     def __init__(self, X_data, y_data, epochs, batch_size, eta, lmb, cost_function,
-                 learning_rate='constant', t0=1.0, t1=10.0, gradient_scaling=0,
+                 learning_rate='constant', t0=1.0, t1=10.0, gradient_scaling=1,
                  wb_init='random', bias_init=0.01):
 #        np.random.seed(4155)
 
@@ -118,7 +118,7 @@ class NeuralNetwork:
             elif self._wb_init == 'glorot':
                 # TODO: this is kinda weird, MLP has different indexing for things
                 for i in range(1, self._n_layers):
-                    factor = np.sqrt(6 / (n_neurons[i] + n_neurons[i - 1]))  # sqrt(2) for classification??????????
+                    factor = np.sqrt(6 / (n_neurons[i] + n_neurons[i - 1]))  # sqrt(2) for classification?
                     self._weights_start[i] = np.random.uniform(-factor, factor, (n_neurons[i - 1], n_neurons[i]))
                     self._bias_start[i] = np.random.uniform(-factor, factor, n_neurons[i])
 
@@ -132,7 +132,7 @@ class NeuralNetwork:
             self._z[i] = np.matmul(self._a[i-1], self._weights[i]) + self._bias[i]
             self._a[i] = self._activation[i](self._z[i])
 
-        self._output = self._a[-1]  # TODO: ...yes?
+        self._output = self._a[-1]
 
     def _back_propagation(self):
         error = [None] * self._n_layers
@@ -188,11 +188,10 @@ class NeuralNetwork:
 
                 self._X_batch = self._X_data[batch_indices]
                 self._y_batch = (self._y_data[batch_indices])
-                self._a[0] = self._X_batch#.copy()  # kinda superfluous to have both this and X_batch
+                self._a[0] = self._X_batch
 
-#                print(i, j)
                 self._feed_forward()
-                accumulated_loss += self._compute_loss() * self._batch_size  # Batch loss
+                accumulated_loss += self._compute_loss() #* self._batch_size  # Batch loss
                 if self._learning_rate == 'optimal':
                     self._eta = self._learning_schedule(self._epochs*self._n_minibatch + i)
                 self._back_propagation()
@@ -204,9 +203,6 @@ class NeuralNetwork:
         self._feed_forward()
         return self._output
 
-#    def score(self, X_test, y_test):
-#        y_pred = self.predict(X_test)
-
     def _learning_schedule(self, t):
         return self._t0 / (t + self._t1)
 
@@ -217,7 +213,7 @@ class NeuralNetwork:
         values = np.sum(np.array([np.dot(s.ravel(), s.ravel()) for s in self._weights[1:]]))
         loss += (0.5 * self._lmb) * values / self._batch_size
 
-        return loss[0]
+        return loss
 
     def _set_data(self, X, y):
         pass
