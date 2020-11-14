@@ -10,9 +10,9 @@ The file `task_a.py` performs the analysis with SGD
 
 The file `task_b.py` performs the analysis with FFNN
 ### Classification:
-The file `task_d.py` performs the analysis with SGD
+The file `task_d.py` performs the analysis with FFNN
 
-The file `task_e.py` performs the analysis with FFNN
+The file `task_e.py` performs the analysis with SGD
 
 ## Benchmarks
 A set of benchmark results can be found in the benchmarks folder, with one file corresponding to each of the main programs of the project.
