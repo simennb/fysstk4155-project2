@@ -1,0 +1,8 @@
+Franke Function:
+Seed =  4155 
+N = 529 
+noise = 0.0500 
+p = 0 
+scale = [True, False] 
+test_size = 0.20
+  0 percent complete. Combination     0 of 1.

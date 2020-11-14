@@ -1,0 +1,34 @@
+C:\Users\simen\Anaconda3\python.exe G:/GitHub/fysstk4155-project2/src/task_e.py
+  0 percent complete. Combination     0 of 192.
+ 10 percent complete. Combination    20 of 192.
+ 20 percent complete. Combination    40 of 192.
+ 30 percent complete. Combination    60 of 192.
+ 40 percent complete. Combination    80 of 192.
+ 50 percent complete. Combination   100 of 192.
+ 60 percent complete. Combination   120 of 192.
+ 70 percent complete. Combination   140 of 192.
+ 80 percent complete. Combination   160 of 192.
+ 90 percent complete. Combination   180 of 192.
+Results saved to directory: ../datafiles/mnist/sgd/test_4434/
+#######################
+Optimal hyperparameters
+n_epochs = 25
+batch_size = 1
+eta0 = 1.000e-03
+lambda = 1.000e-01
+#######################
+Accuracy:
+train = 0.984  ,  test = 0.961
+#######################
+Analysis complete
+Time elapsed:   0 hours, 13 minutes,  4 seconds
+
+SGDClassifier:
+
+Training MSE for SGD: 0.693807
+Training R2 for SGD: 0.915673
+
+Test MSE for SGD: 0.652778
+Test R2 for SGD: 0.919476
+
+Process finished with exit code 0

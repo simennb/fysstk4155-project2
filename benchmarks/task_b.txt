@@ -1,0 +1,39 @@
+Franke Function:
+Seed =  4155 
+N = 529 
+noise = 0.0500 
+p = 0 
+scale = [True, False] 
+test_size = 0.20
+  0 percent complete. Combination     0 of 1.
+Results saved to directory: ../datafiles/franke/neuralnet/best_params_111111/
+#######################
+Optimal hyperparameters
+n_epochs = 100
+batch_size = 50
+eta0 = 1.000e-01
+lambda = 1.000e-03
+n_h_neurons = 25
+n_h_layers = 1
+#######################
+MSE:
+train = 0.011  ,  test = 0.012
+R2:
+train = 0.830  ,  test = 0.822
+#######################
+Analysis complete
+Time elapsed:   0 hours,  0 minutes, 58 seconds
+C:\Users\simen\Anaconda3\lib\site-packages\sklearn\neural_network\multilayer_perceptron.py:1321: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  y = column_or_1d(y, warn=True)
+Best params: [1.0e+02 5.0e+01 1.0e-01 1.0e-03 2.5e+01 1.0e+00]
+
+MLPRegressor:
+
+Training MSE for NN: 0.027595
+Training R2 for NN: 0.585402
+
+Test MSE for NN: 0.029851
+Test R2 for NN: 0.551972
+100
+C:\Users\simen\Anaconda3\lib\site-packages\sklearn\neural_network\multilayer_perceptron.py:566: ConvergenceWarning: Stochastic Optimizer: Maximum iterations (100) reached and the optimization hasn't converged yet.
+  % self.max_iter, ConvergenceWarning)

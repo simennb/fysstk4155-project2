@@ -1,4 +1,18 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{10}
+
+\bibitem{Github1}
+Git{H}ub repository, {P}roject 1.
+\newblock \url{https://github.com/simennb/fysstk4155-project1}.
+
+\bibitem{Franke}
+Richard Franke.
+\newblock A critical comparison of some methods for interpolation of scattered
+  data, 1979.
+
+\bibitem{MNIST}
+{MNIST} handwritten digit database, {Yann LeCun} {Corinna Cortes} and {Chris
+  Burges}.
+\newblock \url{http://yann.lecun.com/exdb/mnist/}.
 
 \bibitem{Hastie}
 Hastie et~al.
@@ -6,17 +20,36 @@ Hastie et~al.
   and Prediction}.
 \newblock Springer, second edition edition, 2017.
 
-\bibitem{vanwieringen2020lecture}
-Wessel~N. van Wieringen.
-\newblock Lecture notes on ridge regression, 2020.
+\bibitem{Geron}
+Aurélien Géron.
+\newblock {\em Hands-On Machine Learning with Scikit-Learn and TensorFlow}.
+\newblock O'Reilly, first edition edition, 2017.
 
-\bibitem{Github1}
-Github repository, project 1.
-\newblock \url{https://github.com/simennb/fysstk4155-project1}.
+\bibitem{mcculloch43a}
+Warren Mcculloch and Walter Pitts.
+\newblock A logical calculus of ideas immanent in nervous activity.
+\newblock {\em Bulletin of Mathematical Biophysics}, 5:127--147, 1943.
 
-\bibitem{Franke}
-Richard Franke.
-\newblock A critical comparison of some methods for interpolation of scattered
-  data, 1979.
+\bibitem{Nielsen}
+{Michael A. Nielsen}. \textit{{N}eural {N}etworks and {D}eep {L}earning} -
+  {C}hapter 2.
+\newblock \\\url{http://neuralnetworksanddeeplearning.com/chap2.html}.
+
+\bibitem{glorot}
+Xavier Glorot and Yoshua Bengio.
+\newblock Understanding the difficulty of training deep feedforward neural
+  networks.
+\newblock volume~9 of {\em Proceedings of Machine Learning Research}, pages
+  249--256, Chia Laguna Resort, Sardinia, Italy, 13--15 May 2010. JMLR Workshop
+  and Conference Proceedings.
+
+\bibitem{c2012}
+Dan Ciresan, Ueli Meier, and Juergen Schmidhuber.
+\newblock \textit{Multi-column {Deep} {Neural} {Networks} for {Image
+  Classification}}, 2012.
+
+\bibitem{Github2}
+Git{H}ub repository, {P}roject 2.
+\newblock \url{https://github.com/simennb/fysstk4155-project2}.
 
 \end{thebibliography}

@@ -1,0 +1,19 @@
+  0 percent complete. Combination     0 of 1.
+Results saved to directory: ../datafiles/mnist/sgd/best_params_1111/
+#######################
+Optimal hyperparameters
+n_epochs = 100
+batch_size = 1
+eta0 = 1.000e-03
+lambda = 1.000e-01
+#######################
+Accuracy:
+train = 0.984  ,  test = 0.963
+#######################
+Analysis complete
+Time elapsed:   0 hours,  0 minutes, 20 seconds
+[0 0 0 0]
+
+SGDClassifier:
+Train accuracy:  0.9749478079331941
+Test accuracy:  0.9527777777777777

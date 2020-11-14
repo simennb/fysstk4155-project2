@@ -1,0 +1,47 @@
+Franke Function:
+Seed =  4155 
+N = 529 
+noise = 0.0500 
+p = 0 
+scale = [True, False] 
+test_size = 0.20
+(529,)
+  0 percent complete. Combination     0 of 12.
+ 10 percent complete. Combination     2 of 12.
+ 20 percent complete. Combination     4 of 12.
+ 30 percent complete. Combination     6 of 12.
+ 40 percent complete. Combination     8 of 12.
+ 50 percent complete. Combination    10 of 12.
+Results saved to directory: ../datafiles/franke/neuralnet/nn_parameters_111134/
+#######################
+Optimal hyperparameters
+n_epochs = 100
+batch_size = 50
+eta0 = 1.000e-01
+lambda = 1.000e-03
+n_h_neurons = 25
+n_h_layers = 4
+#######################
+MSE:
+train = 0.004  ,  test = 0.005
+R2:
+train = 0.935  ,  test = 0.930
+#######################
+Analysis complete
+Time elapsed:   0 hours, 20 minutes, 29 seconds
+Best params: [1.0e+02 5.0e+01 1.0e-01 1.0e-03 2.5e+01 4.0e+00]
+C:\Users\simen\Anaconda3\lib\site-packages\sklearn\neural_network\multilayer_perceptron.py:1321: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  y = column_or_1d(y, warn=True)
+
+MLPRegressor:
+
+Training MSE for NN: 0.027837
+Training R2 for NN: 0.581765
+
+Test MSE for NN: 0.030325
+Test R2 for NN: 0.544862
+100
+C:\Users\simen\Anaconda3\lib\site-packages\sklearn\neural_network\multilayer_perceptron.py:566: ConvergenceWarning: Stochastic Optimizer: Maximum iterations (100) reached and the optimization hasn't converged yet.
+  % self.max_iter, ConvergenceWarning)
+G:\GitHub\fysstk4155-project2\src\lib\functions.py:290: RuntimeWarning: More than 20 figures have been opened. Figures created through the pyplot interface (`matplotlib.pyplot.figure`) are retained until explicitly closed and may consume too much memory. (To control this warning, see the rcParam `figure.max_open_warning`).
+  fig, ax = plt.subplots()

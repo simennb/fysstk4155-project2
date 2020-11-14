@@ -9,24 +9,15 @@ from numba import njit
 # Cost functions
 ################
 
+# Mean squared error
 def cost_MSE(y, a):
     return np.mean((a - y) ** 2, axis=0) / 2
 
 
-# check p. 195 ish av aurelion geron
-# Log loss is the same as cross-entropy, right?
-# Cross entropy = log loss in binary cases OK
-
 # Cross-Entropy
 def cost_CrossEntropy(y, a):
-#    print(y.shape, a.shape)
-#    res = - np.sum(y * np.log(a), axis=1)
-#    print(res)
-#    input()
-#    return - np.sum(y * np.log(a), axis=1) #/ a.shape[0]  # ????
     res = - np.sum(y * np.log(a), axis=1)
     return np.mean(res)
-#    return - np.sum(y * np.log(a), axis=1) / a.shape[0]  # ????
 
 
 ######################
@@ -87,10 +78,7 @@ def softmax(z):
 
 @njit
 def d_softmax(z):
-    # since we use as output this will never be used
-    # TODO: look closer at it
-    # TODO: lecture notes week 41, slide 7
-    # np.kron()
+    # Not used
     return 0
 
 

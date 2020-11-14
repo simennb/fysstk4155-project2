@@ -108,4 +108,3 @@ if __name__ == '__main__':
 
     print('NEURAL NETWORK')
     test_FFNN(x, y)
-    # TODO: MAKE PLOT OF LEARNING RATE

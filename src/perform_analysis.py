@@ -1,42 +1,34 @@
-from lib import functions as fun, neural_network as nn, resampling_methods as res
+from lib import functions as fun, neural_network as nn, resampling_methods as res, sgd as sgd
 import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.neural_network import MLPRegressor, MLPClassifier  # TODO: remove if not used
 import time
 import os
 
 
 class PerformAnalysis:
-    """I dont know if this is a good idea
-    This is a way of making the hyperparameter-search slightly easier
+    """
+    Grid search function for both SGD and FFNN, as an attempt
+    to make it easier to perform the required analysis.
 
     Parameters
     ----------
-    mode
-    method
-    learning_rate
-    dir_path
-    filename
-    CV
-    K
-
-    Methods
-    -------
-    # TODO Maybe????
-
+    mode: str, which type of problem we are dealing with ('regression' or 'classification')
+    method: str, method used for analysis ('sgd' or 'neuralnet')
+    learning_rate: str, learning rate alternatives ('constant' or 'optimal')
+    dir_path: str, base directory path for saving results
+    filename: str, filename to add to results folder and filenames
+    CV: bool, whether or not cross-validation is used, default=True
+    K: int, number of folds for CV, default=5
+    t0: int, for 'optimal' learning rate, default=1
+    t1: int, for 'optimal' learning rate, default=10
     """
-    def __init__(self, mode, method, learning_rate, dir_path, filename, CV=True, K=5, SKL=0, t0=1, t1=5):
-        self._mode = mode  # 'regression' or 'classication'
-        self._method = method  # 'sgd' or 'neuralnet'
-        self._learning_rate = learning_rate  # 'constant' or 'optimal' TODO: ?
-        self._dir_path = dir_path  # Directory path
-        self._filename = filename  # identifier for the current run, to save to file
-        self._CV = CV  # if to use Cross-Validation for the analysis
-        self._K = K  # number of K-folds for CV
-        self._SKL = SKL  # 0 = no, 1 = compare, 2 = only SKL TODO: HELP???!!?!?!??!?!?
-        # TODO: or with SKL, we dont do it here, but rather manually call SKL
-        # TODO: using default settings or the optimal parameters we found
-
+    def __init__(self, mode, method, learning_rate, dir_path, filename, CV=True, K=5, t0=1, t1=10):
+        self._mode = mode
+        self._method = method
+        self._learning_rate = learning_rate
+        self._dir_path = dir_path
+        self._filename = filename
+        self._CV = CV
+        self._K = K
         self._t0 = t0
         self._t1 = t1
 
@@ -50,23 +42,25 @@ class PerformAnalysis:
         self.analysed = False
 
     def set_data(self, X, y, test_size=0.2, scale=[True, False]):
-        # Figure out how to deal with potential CV
-        # TODO: probably just give in full X/y + test_size
+        """
+        Setting up the data to be used for analysis.
+        Scales (and splits if not using CV) the design matrix.
+        """
         self._X = X
         self._y = y
 
         if self._CV:
             pass
-#            self._X = fun.scale_X(self._X, scale)
         else:
             self._X_train, self._X_test, self._y_train, self._y_test = fun.split_data(X, self._y, test_size=test_size)
             self._X_train = fun.scale_X(self._X_train, scale)
             self._X_test = fun.scale_X(self._X_test, scale)
         self._X = fun.scale_X(self._X, scale)
 
-        # TODO: this wont necessarily work....
-        self._n_inputs = self._X.shape[0]  # dunno, not used anywhere
-        self._n_labels = self._y.shape[1]
+        self._n_inputs = self._X.shape[0]  # not used anywhere
+        self._n_labels = 1
+        if self._mode == 'classification':
+            self._n_labels = self._y.shape[1]
 
     def set_hyperparameters(self, n_epochs, batch_size, eta0, lambdas,
                             n_h_neurons=[None], n_h_layers=[None]):
@@ -123,7 +117,7 @@ class PerformAnalysis:
             score, best_index, best_params, loss_curve_best = self._run_nn()
         t_end = time.time()
 
-        # TODO: save to file
+        # Save to file
         self.save_to_file(score, best_index, best_params, loss_curve_best)
         self.analysed = True
 
@@ -164,14 +158,10 @@ class PerformAnalysis:
 
         # Creating arrays for results
         score = np.zeros((len(n_epochs), len(batch_size), len(eta0),
-                          len(lambdas),# len(n_h_neurons), len(n_h_layers),  # ))
-                          len(self._stat), 2))  # TODO: last two are amount of stats + train/test
+                          len(lambdas), len(self._stat), 2))  # Last two are amount of statistics + train/test
 
-        loss_best = 1e10
-        loss_curve_best = None
-        # TODO: store best loss-curve for each hyperparameter maybe???
-        # TODO: or just for the total best combination
-
+        loss_best = -1e10
+        loss_curve_best = None  # not implemented for SGD, sadly :(
 
         iteration = 0
         percent_index = 0
@@ -180,7 +170,7 @@ class PerformAnalysis:
             for j in range(len(batch_size)):
                 for k in range(len(eta0)):
                     for l in range(len(lambdas)):
-                        # A mostly functional way to tell a bit easier how far along the analysis is
+                        # A "mostly" functional way to tell how far along the analysis is
                         if iteration % np.ceil(0.1 * self._n_combinations) == 0:
                             print('%3d percent complete. Combination %5d of %d.' % ((10 * percent_index),
                                                                                     iteration,
@@ -188,27 +178,49 @@ class PerformAnalysis:
                             percent_index += 1
                         iteration += 1
 
-                        # TODO: hmm
                         error_train = [1e10] * len(self._stat)
                         error_test = [1e10] * len(self._stat)
 
-                        # TODO: PERFORM SGD
+                        # Sets up the SGD model
+                        if self._mode == 'regression':
+                            sgd_obj = sgd.LinRegSGD(n_epochs[i], batch_size[j], eta0[k], self._learning_rate)
+                        elif self._mode == 'classification':
+                            sgd_obj = sgd.LogRegSGD(n_epochs[i], batch_size[j], self._n_labels,
+                                                    eta0=eta0[k], learning_rate=self._learning_rate)
+                        sgd_obj.set_lambda(lambdas[l])
+                        sgd_obj.set_step_length(self._t0, self._t1)
+
+                        # Perform the fit and prediction with either CV or not
+                        if self._CV:
+                            CV = res.CrossValidation(self._X, self._y, sgd_obj, stat=self._stat)
+                            error_train, error_test = CV.compute(K=self._K)
+
+                        else:
+                            sgd_obj.fit(self._X_train, self._y_train)
+                            y_fit = sgd_obj.predict(self._X_train)
+                            y_pred = sgd_obj.predict(self._X_test)
+
+                            for o in range(len(self._stat)):
+                                error_train = self._stat[o](self._y_train, y_fit)
+                                error_test = self._stat[o](self._y_test, y_pred)
 
                         # Adding train and test error for all statistic functions
                         for o in range(len(self._stat)):
-                            score[i, j, k, l, o, 0] = error_train[o][0]
-                            score[i, j, k, l, o, 1] = error_test[o][1]
+                            score[i, j, k, l, o, 0] = error_train[o]
+                            score[i, j, k, l, o, 1] = error_test[o]
 
                         # Checking if test error is lower than the current best fit
-                        loss_current = score[i, j, k, l, 0, 1]
-                        if loss_current <= loss_best:
+                        # Using R2 and Accuracy since both have score=1 as their goal
+                        if self._mode == 'regression':
+                            loss_current = score[i, j, k, l, 1, 1]  # R2 score
+                        elif self._mode == 'classification':
+                            loss_current = score[i, j, k, l, 0, 1]  # accuracy score
+
+                        if loss_current > loss_best:
                             loss_best = loss_current
                             best_index = [i, j, k, l]
                             best_params = [n_epochs[i], batch_size[j], eta0[k], lambdas[l]]
-
-#                            loss_curve_best = np.array(neural_net._loss)
-                            if self._CV:
-                                loss_curve_best = loss_curve_best.reshape(n_epochs[i], self._K)
+                            loss_curve_best = np.array([0])  # To make sure things don't crash
 
         return score, best_index, best_params, loss_curve_best
 
@@ -224,12 +236,10 @@ class PerformAnalysis:
         # Creating arrays for results
         score = np.zeros((len(n_epochs), len(batch_size), len(eta0),
                           len(lambdas), len(n_h_neurons), len(n_h_layers),  # ))
-                          len(self._stat), 2))  # TODO: last two are amount of stats + train/test
+                          len(self._stat), 2))  # Last two are amount of stats + train/test
 
-        loss_best = 1e10
+        loss_best = -1e10
         loss_curve_best = None
-        # TODO: store best loss-curve for each hyperparameter maybe???
-        # TODO: or just for the total best combination
 
         iteration = 0
         percent_index = 0
@@ -240,7 +250,7 @@ class PerformAnalysis:
                     for l in range(len(lambdas)):
                         for m in range(len(n_h_neurons)):
                             for n in range(len(n_h_layers)):
-                                # A mostly functional way to tell a bit easier how far along the analysis is
+                                # A "mostly" functional way to tell how far along the analysis is
                                 if iteration % np.ceil(0.1 * self._n_combinations) == 0:
                                     print('%3d percent complete. Combination %5d of %d.' % ((10*percent_index),
                                                                                             iteration,
@@ -248,11 +258,10 @@ class PerformAnalysis:
                                     percent_index += 1
                                 iteration += 1
 
-                                # TODO: hmm
                                 error_train = [1e10] * len(self._stat)
                                 error_test = [1e10] * len(self._stat)
 
-                                # Creating lists TODO s ahw da
+                                # Creating lists of the make-up of the current neural network
                                 neuron_layers = [n_h_neurons[m]] * n_h_layers[n] + [self._n_labels]
                                 act_func_layers = [self._act_hidden] * n_h_layers[n] + [self._act_output]
 
@@ -285,8 +294,13 @@ class PerformAnalysis:
                                     score[i, j, k, l, m, n, o, 1] = error_test[o]
 
                                 # Checking if test error is lower than the current best fit
-                                loss_current = score[i, j, k, l, m, n, 0, 1]
-                                if loss_current <= loss_best:
+                                # Using R2 and Accuracy since both have score=1 as their goal
+                                if self._mode == 'regression':
+                                    loss_current = score[i, j, k, l, m, n, 1, 1]  # R2 score
+                                elif self._mode == 'classification':
+                                    loss_current = score[i, j, k, l, m, n, 0, 1]  # accuracy score
+
+                                if loss_current > loss_best:
                                     loss_best = loss_current
                                     best_index = [i, j, k, l, m, n]
                                     best_params = [n_epochs[i], batch_size[j], eta0[k],
@@ -305,9 +319,11 @@ class PerformAnalysis:
 
         filename = self._dir_path + self._filename
 
+        # Saving arrays to binary .npy files
         np.save(filename + '_score', score)
         np.save(filename + '_best_index', best_index)
-        np.save(filename + '_best_params', best_params)
+        if self._method == 'neuralnet':  # not sure why, but best_params gives weird problems with sgd
+            np.save(filename + '_best_params', best_params)
         np.save(filename + '_loss_curve_best', loss_curve_best)
 
         # Save parameters

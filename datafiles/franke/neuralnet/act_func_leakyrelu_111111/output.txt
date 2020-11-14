@@ -1,0 +1,40 @@
+Franke Function:
+Seed =  4155 
+N = 529 
+noise = 0.0500 
+p = 0 
+scale = [True, False] 
+test_size = 0.20
+(529,)
+  0 percent complete. Combination     0 of 1.
+Results saved to directory: ../datafiles/franke/neuralnet/act_func_leakyrelu_111111/
+#######################
+Optimal hyperparameters
+n_epochs = 50
+batch_size = 1
+eta0 = 1.000e-01
+lambda = 0.000e+00
+n_h_neurons = 25
+n_h_layers = 1
+#######################
+MSE:
+train = 0.006  ,  test = 0.007
+R2:
+train = 0.909  ,  test = 0.893
+#######################
+Analysis complete
+Time elapsed:   0 hours,  0 minutes, 19 seconds
+Best params: [50.   1.   0.1  0.  25.   1. ]
+C:\Users\simen\Anaconda3\lib\site-packages\sklearn\neural_network\multilayer_perceptron.py:1321: DataConversionWarning: A column-vector y was passed when a 1d array was expected. Please change the shape of y to (n_samples, ), for example using ravel().
+  y = column_or_1d(y, warn=True)
+C:\Users\simen\Anaconda3\lib\site-packages\sklearn\neural_network\multilayer_perceptron.py:566: ConvergenceWarning: Stochastic Optimizer: Maximum iterations (50) reached and the optimization hasn't converged yet.
+
+  % self.max_iter, ConvergenceWarning)
+MLPRegressor:
+
+Training MSE for NN: 0.020972
+Training R2 for NN: 0.684908
+
+Test MSE for NN: 0.023131
+Test R2 for NN: 0.652837
+50

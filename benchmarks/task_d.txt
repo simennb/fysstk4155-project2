@@ -1,0 +1,23 @@
+  0 percent complete. Combination     0 of 1.
+Results saved to directory: ../datafiles/mnist/neuralnet/best_params_111111/
+#######################
+Optimal hyperparameters
+n_epochs = 10
+batch_size = 5
+eta0 = 1.000e-01
+lambda = 1.000e-02
+n_h_neurons = 10
+n_h_layers = 1
+#######################
+Accuracy:
+train = 0.989  ,  test = 0.950
+#######################
+Analysis complete
+Time elapsed:   0 hours,  0 minutes, 20 seconds
+(0, 0, 0, 0, 0, 0, 0, 0)
+
+C:\Users\simen\Anaconda3\lib\site-packages\sklearn\neural_network\multilayer_perceptron.py:566: ConvergenceWarning: Stochastic Optimizer: Maximum iterations (10) reached and the optimization hasn't converged yet.
+MLPClassifier:
+  % self.max_iter, ConvergenceWarning)
+Train accuracy:  0.942936673625609
+Test accuracy:  0.9

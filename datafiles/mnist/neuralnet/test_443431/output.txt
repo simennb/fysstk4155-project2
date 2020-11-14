@@ -1,0 +1,35 @@
+  0 percent complete. Combination     0 of 576.
+ 10 percent complete. Combination    58 of 576.
+ 20 percent complete. Combination   116 of 576.
+ 30 percent complete. Combination   174 of 576.
+ 40 percent complete. Combination   232 of 576.
+ 50 percent complete. Combination   290 of 576.
+ 60 percent complete. Combination   348 of 576.
+ 70 percent complete. Combination   406 of 576.
+ 80 percent complete. Combination   464 of 576.
+ 90 percent complete. Combination   522 of 576.
+Results saved to directory: ../datafiles/mnist/neuralnet/443431/
+#######################
+Optimal hyperparameters
+n_epochs = 10
+batch_size = 5
+eta0 = 1.000e-03
+lambda = 1.000e-02
+n_h_neurons = 10
+n_h_layers = 1
+#######################
+Accuracy:
+train = 0.456  ,  test = 0.437
+#######################
+Analysis complete
+Time elapsed:  15 hours, 34 minutes, 10 seconds
+
+MLPClassifier:
+
+Training MSE for NN: 0.100000
+C:\Users\simen\Anaconda3\lib\site-packages\sklearn\neural_network\multilayer_perceptron.py:566: ConvergenceWarning: Stochastic Optimizer: Maximum iterations (10) reached and the optimization hasn't converged yet.
+Training R2 for NN: -0.111111
+  % self.max_iter, ConvergenceWarning)
+
+Test MSE for NN: 0.100000
+Test R2 for NN: -0.111111

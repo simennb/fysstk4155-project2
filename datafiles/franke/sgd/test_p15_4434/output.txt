@@ -1,0 +1,48 @@
+  0 percent complete. Combination     0 of 192.
+ 10 percent complete. Combination    20 of 192.
+ 20 percent complete. Combination    40 of 192.
+ 30 percent complete. Combination    60 of 192.
+ 40 percent complete. Combination    80 of 192.
+G:\GitHub\fysstk4155-project2\src\lib\functions.py:51: RuntimeWarning: overflow encountered in square
+  return np.mean((y_data - y_model) ** 2, axis=0)#, keepdims=True)
+G:\GitHub\fysstk4155-project2\src\lib\functions.py:58: RuntimeWarning: overflow encountered in square
+  return 1 - np.sum((y_data - y_model) ** 2) / np.sum((y_data - np.mean(y_data)) ** 2)
+ 50 percent complete. Combination   100 of 192.
+ 60 percent complete. Combination   120 of 192.
+ 70 percent complete. Combination   140 of 192.
+G:\GitHub\fysstk4155-project2\src\lib\sgd.py:29: RuntimeWarning: overflow encountered in matmul
+  gradients = 2 * xi.T @ ((xi @ theta) - yi) / m  # TODO ??????????????
+G:\GitHub\fysstk4155-project2\src\lib\sgd.py:30: RuntimeWarning: invalid value encountered in multiply
+  gradients += lmb*theta  # Ridge regularization
+G:\GitHub\fysstk4155-project2\src\lib\sgd.py:29: RuntimeWarning: invalid value encountered in matmul
+  gradients = 2 * xi.T @ ((xi @ theta) - yi) / m  # TODO ??????????????
+G:\GitHub\fysstk4155-project2\src\lib\sgd.py:30: RuntimeWarning: overflow encountered in add
+  gradients += lmb*theta  # Ridge regularization
+G:\GitHub\fysstk4155-project2\src\lib\sgd.py:37: RuntimeWarning: invalid value encountered in subtract
+  theta = theta - eta * gradients
+ 80 percent complete. Combination   160 of 192.
+ 90 percent complete. Combination   180 of 192.
+Results saved to directory: ../datafiles/franke/sgd/test_p15_4434/
+#######################
+Optimal hyperparameters
+n_epochs = 100
+batch_size = 5
+eta0 = 1.000e-01
+lambda = 1.000e-03
+#######################
+MSE:
+train = 0.010  ,  test = 0.010
+R2:
+train = 0.843  ,  test = 0.839
+#######################
+Analysis complete
+Time elapsed:   0 hours,  1 minutes, 21 seconds
+[3 1 0 3]
+
+SGDClassifier:
+
+Training MSE for SGD: 0.024335
+Training R2 for SGD: 0.634374
+
+Test MSE for SGD: 0.030900
+Test R2 for SGD: 0.536228

@@ -1,0 +1,25 @@
+  0 percent complete. Combination     0 of 1.
+Results saved to directory: ../datafiles/franke/sgd/best_params_p8_p8_1111/
+#######################
+Optimal hyperparameters
+n_epochs = 100
+batch_size = 5
+eta0 = 1.000e-01
+lambda = 0.000e+00
+#######################
+MSE:
+train = 0.011  ,  test = 0.012
+R2:
+train = 0.832  ,  test = 0.815
+#######################
+Analysis complete
+Time elapsed:   0 hours,  0 minutes,  0 seconds
+[0 0 0 0]
+
+SGDClassifier:
+
+Training MSE for SGD: 0.026017
+Training R2 for SGD: 0.609103
+
+Test MSE for SGD: 0.031684
+Test R2 for SGD: 0.524462

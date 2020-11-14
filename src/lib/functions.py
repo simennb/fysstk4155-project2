@@ -44,11 +44,8 @@ def franke_function(x, y):
 def mean_squared_error(y_data, y_model):
     y_data = y_data.reshape(-1, 1)
     y_model = y_model.reshape(-1, 1)
-#    print(y_data.shape, y_model.shape)
-    #n = np.size(y_model)
-    #return np.sum((y_data-y_model)**2)/n
-#    print(np.mean((y_data - y_model) ** 2, axis=0).shape)
-    return np.mean((y_data - y_model) ** 2, axis=0)#, keepdims=True)
+
+    return np.mean((y_data - y_model) ** 2, axis=0)
 
 
 def calculate_R2(y_data, y_model):
@@ -59,18 +56,12 @@ def calculate_R2(y_data, y_model):
 
 
 def accuracy(y_data, y_model):
-#    print(y_data.shape, y_model.shape)
-#    y_data = y_data.reshape(-1, 1)
-#    y_model = y_model.reshape(-1, 1)
     n = len(y_data)
-#    print(y_data.shape, y_model.shape)
 
     t = np.argmax(y_model, axis=1)
-#    print(t[0:10])
-
     y = np.argmax(y_data, axis=1)
+
     res = np.sum(t == y)
-#    print(t, y)
     return res/n
 
 
@@ -285,22 +276,23 @@ def plot_degree_lambda(polydegree, lambdas, title, save, fig_path, task, fs=14):
     plt.savefig(fig_path+'task_%s/degree_lambda_%s.png' % (task, save))
 
 
-def plot_heatmap(x, y, z, xlab, ylab, zlab, title, save, fig_path, task, fs=14):
+def plot_heatmap(x, y, z, xlab, ylab, zlab, title, save, fig_path, task, fs=14, xt='int', yt='int'):
+    ticks = {'int': '%d', 'exp': '%1.1e'}  # formatting x/y-ticks
     fig, ax = plt.subplots()
 
     heatmap = ax.pcolor(z)
     cbar = plt.colorbar(heatmap, ax=ax)
 
-    step = 2
-    xticks = ['%1.2e' % x[i] for i in range(0, len(x), step)]
-    yticks = ['%d' % y[i] for i in range(0, len(y), step)]
+    step = 1
+    xticks = [ticks[xt] % x[i] for i in range(0, len(x), step)]
+    yticks = [ticks[yt] % y[i] for i in range(0, len(y), step)]
 
     ax.set_xticks(np.arange(0, z.shape[1], step) + 0.5, minor=False)
     ax.set_yticks(np.arange(0, z.shape[0], step) + 0.5, minor=False)
     ax.set_xticklabels(xticks, rotation=90, fontsize=10)
     ax.set_yticklabels(yticks, fontsize=10)
 
-    cbar.ax.set_title(zlab)#, fontsize=fs)
+    cbar.ax.set_title(zlab)
     ax.set_xlabel(r'%s' % xlab, fontsize=fs)
     ax.set_ylabel(r'%s' % ylab, fontsize=fs)
     ax.set_title(title, fontsize=fs)
@@ -382,12 +374,3 @@ def save_to_file(array_list, column_names, filename, benchmark=False):
 
     outfile.close()
     return
-
-
-if __name__ == '__main__':
-    # Plots the entire terrain map
-    terrain_data = '../datafiles/SRTM_data_Norway_3.tif'
-    terrain = imread(terrain_data)
-    plot_terrain(terrain, 'Terrain over Norway 3', 'entire_map', '../../figures/', 'f', fs=10)
-
-    plt.show()

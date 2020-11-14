@@ -1,0 +1,32 @@
+  0 percent complete. Combination     0 of 24.
+ 10 percent complete. Combination     3 of 24.
+ 20 percent complete. Combination     6 of 24.
+ 30 percent complete. Combination     9 of 24.
+ 40 percent complete. Combination    12 of 24.
+ 50 percent complete. Combination    15 of 24.
+ 60 percent complete. Combination    18 of 24.
+ 70 percent complete. Combination    21 of 24.
+Results saved to directory: ../datafiles/franke/sgd/non_constant_lr_p8_6114/
+#######################
+Optimal hyperparameters
+n_epochs = 75
+batch_size = 5
+eta0 = 1.000e-01
+lambda = 1.000e-01
+#######################
+MSE:
+train = 0.031  ,  test = 0.030
+R2:
+train = 0.539  ,  test = 0.524
+#######################
+Analysis complete
+Time elapsed:   0 hours,  0 minutes,  9 seconds
+[3 0 0 1]
+
+SGDClassifier:
+
+Training MSE for SGD: 0.028028
+Training R2 for SGD: 0.578888
+
+Test MSE for SGD: 0.033518
+Test R2 for SGD: 0.496946

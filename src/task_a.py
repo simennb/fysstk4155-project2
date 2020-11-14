@@ -1,70 +1,73 @@
-from lib import regression_methods as reg, sgd, functions as fun, resampling_methods as res
+from lib import functions as fun
 import numpy as np
 import matplotlib.pyplot as plt
-import sklearn.linear_model as skl
 from sklearn.linear_model import SGDRegressor
-from sklearn.utils.testing import ignore_warnings  # For lasso, maybe remove if no lasso
-from sklearn.exceptions import ConvergenceWarning  # same as above
+from perform_analysis import PerformAnalysis
+import os
 
 
 run_mode = 'a'
-data = 'franke'
-
 fig_path = '../figures/'
-data_path = '../datafiles/'
-write_path = '../datafiles/'
+data_path = '../datafiles/franke/sgd/'
 
-p = 30  # degree of polynomial for the task
+load_file = False  # if set to True, load files located there instead of performing analysis
+#load_file = True
+
+compare_skl = True  # whether or not the SKL loss curve is to be plotted
+
+# Polynomial degree
+p = 8
+
+# Hyperparameters to loop over
+################################
+# The blocks below are some of the filename and parameter combinations that were used
+# to create results in the report.
+# This could probably have been done more optimal with parameter files or something like that.
+filename = 'best_params_p8'
+n_epochs = [100]  # Number of epochs in SGD
+batch_size = [5]  # Size of each mini-batch
+eta0 = [1e-1]  # Start training rate
+lambdas = [0]  # Regularization
+
+'''
+filename = 'test'
+n_epochs = [10, 25, 50, 100]  # Number of epochs in SGD
+batch_size = [1, 5, 10, 50]  # Size of each mini-batch
+eta0 = [1e-1, 1e-2, 1e-3]  # Start training rate
+lambdas = [0.0, 0.1, 0.01, 0.001]  # Regularization
+'''
+
+'''
+filename = 'best_params_p15'
+n_epochs = [100]  # Number of epochs in SGD
+batch_size = [5]  # Size of each mini-batch
+eta0 = [1e-1]  # Start training rate
+lambdas = [1e-3]  # Regularization
+'''
+
+# Stochastic gradient descent parameters
+learning_rate = 'constant'  # 'optimal'
+
+t0 = 1
+t1 = 10
+
+# Test and scaling
 scale = [True, False]  # first index is whether to subtract mean, second is to scale by std
-
 test_size = 0.2
 
-# Regression method
-reg_str = 'OLS'
-#reg_str = 'Ridge'
-#reg_str = 'Lasso'  # probably not needed
-reg_str = 'SGD'
-#reg_str = 'SGD_SKL'
+# Cross-validation
+CV = True
+K = 5
+
+# String for folder and filenames
+hyper_par_string = str(len(n_epochs)) + str(len(batch_size)) + str(len(eta0)) + str(len(lambdas))
+data_path += '%s_p%d_%s/' % (filename, p, hyper_par_string)
 
 # Creating data set for the Franke function tasks
 seed = 4155
 n_franke = 23  # 529 points
 N = n_franke**2  # Total number of samples n*2
 noise = 0.05  # noise level
-
-# Bootstrap and CV variables
-N_bootstraps = 100#int(N / 2)  # number of resamples (ex. N/2, N/4)
-K = 5
-
-# Stochastic gradient descent parameters
-N_epochs = 50  # Number of epochs in SGD
-batch_size = 10  # size of each mini-batch
-# N_minibatch = 10  # Number of mini-batches
-eta0 = 0.1  # Start training rate
-learning_rate = 'optimal'#'invscaling'  # constant
-t0 = 5
-t1 = 100
-penalty = 'l2'
-
-# Benchmark settings
-benchmark = False  # setting to True will adjust all relevant settings for all task
-if benchmark is True:
-    p = 5
-    scale = [True, False]
-    reg_str = 'SGD'  # set to SGD maybe since that's the point of the task
-    n_franke = 23
-    N = 529
-    noise = 0.05
-    N_bootstraps = 264
-    K = 5
-    N_epochs = 100
-    batch_size = 1
-#    N_minibatch = 10
-    eta0 = 0.1
-    penalty = None
-
-# Printing some information for logging purposes
-fun.print_parameters_franke(seed, N, noise, p, scale, test_size)  # TODO: fix to print reasonable parameters
 
 # Randomly generated meshgrid
 np.random.seed(seed)
@@ -85,216 +88,71 @@ z_ravel = np.ravel(z_mesh)
 # Creating polynomial design matrix
 X = fun.generate_polynomial(x_ravel, y_ravel, p)
 
+# Split into train and test, and scale data (only used by SKL)
+X_train, X_test, y_train, y_test = fun.split_data(X, z_ravel, test_size=test_size)
+X_train_scaled = fun.scale_X(X_train, scale)
+X_test_scaled = fun.scale_X(X_test, scale)
 
-# TODO: remove dependency on function once i've decided what i actually need to do in this task
-########################################################################################################################
-#@fun.timeit
-@ignore_warnings(category=ConvergenceWarning)
-def run_regression(X, z, reg_string, polydegree, lambdas, N_bs, K, test_size, scale, max_iter=50000, t0=1, t1=10, penalty=None):
-    """
-    Runs the selected regression methods for the input design matrix, p's, lambdas, and using
-    the resampling methods as specified.
-    While there may be several ways I could have done this more optimally, this function exists
-    because a rather late attempt at restructuring the code in order to reduce the amount of duplicate
-    lines of code regarding regression, that had just escalated out of control, making it extremely
-    difficult to debug and finding whatever was causing all the issues.
-    :param X: (N, p) array containing input design matrix
-    :param z: (N, 1) array containing data points
-    :param reg_string: string containing the name of the regression method to be used
-    :param polydegree: list/range of the different p-values to be used
-    :param lambdas: array of all the lambda values to be used
-    :param N_bs: int, number of Bootstraps
-    :param K: int, number of folds in the Cross-Validation
-    :param test_size: float, size of the test partition [0.0, 1.0]
-    :param scale: list determining if the scaling is only by the mean, the std or both [bool(mean), bool(std)]
-    :param max_iter: maximum number of iterations for Lasso
-    :return: a lot of arrays with the various results and different ways of representing the data
-    """
-    nlambdas = len(lambdas)  # number of lambdas
-    p = polydegree[-1]  # the maximum p-value
-    method = 4  # OLS method
+# Only runs analysis if load_file=False, but since PerformAnalysis always saves to file, we load the files afterwards
+# if analysis is performed, as a more robust interface with the class is missing due to time constraints.
+if not load_file:
+    analysis = PerformAnalysis('regression', 'sgd', learning_rate, data_path, filename, CV=CV, K=K, t0=t0, t1=t1)
+    analysis.set_hyperparameters(n_epochs, batch_size, eta0, lambdas)
+    analysis.set_data(X, z_ravel, test_size=test_size, scale=scale)
+    analysis.run()
 
-    # Splitting into train and test, scaling the data
-    X_train, X_test, z_train, z_test = fun.split_data(X, z, test_size=test_size)
-    X_train_scaled = fun.scale_X(X_train, scale)
-    X_test_scaled = fun.scale_X(X_test, scale)
-    X_scaled = fun.scale_X(X, scale)
+if load_file or analysis.analysed:
+    score = np.load(data_path+filename+'_score.npy')
+    best_index = np.load(data_path+filename+'_best_index.npy')
+    loss_curve_best = np.load(data_path+filename+'_loss_curve_best.npy')
+i_, j_, k_, l_ = best_index
+print(best_index)
 
-    # Bootstrap arrays
-    bs_error_train = np.zeros((p, nlambdas))
-    bs_error_test = np.zeros((p, nlambdas))
-    bs_bias = np.zeros((p, nlambdas))
-    bs_var = np.zeros((p, nlambdas))
+sgd_skl = SGDRegressor(alpha=lambdas[l_], max_iter=n_epochs[i_])
+sgd_skl.fit(X_train_scaled, y_train)
 
-    bs_error_train_opt = np.zeros((p, 2))
-    bs_error_test_opt = np.zeros((p, 2))
-    bs_bias_opt = np.zeros((p, 2))  # First index is min(MSE) lmb for each p, second at lmb that yields total lowest MSE
-    bs_var_opt = np.zeros((p, 2))
-    bs_lmb_opt = np.zeros(p)
+y_fit = sgd_skl.predict(X_train_scaled)
+y_pred = sgd_skl.predict(X_test_scaled)
 
-    # Cross-validation arrays
-    cv_error_train = np.zeros((p, nlambdas))
-    cv_error_test = np.zeros((p, nlambdas))
-    cv_error_train_opt = np.zeros((p, 2))
-    cv_error_test_opt = np.zeros((p, 2))
-    cv_lmb_opt = np.zeros(p)
-
-    # Setting up regression object to be used for regression (Lasso is dealt with later)
-    reg_obj = reg.OrdinaryLeastSquares(method)  # default
-    if reg_string == 'SKL':
-        reg_obj = skl.LinearRegression()  # Testing with scikit-learn OLS
-    elif reg_string == 'Ridge':
-        reg_obj = reg.RidgeRegression()
-    elif reg_string == 'SGD':
-        reg_obj = sgd.LinRegSGD(n_epochs=N_epochs, batch_size=batch_size, eta0=0.1,
-                                penalty=penalty, learning_rate=learning_rate)
-        reg_obj.set_step_length(t0=t0, t1=t1)
-
-    # Looping over all polynomial degrees in the analysis
-    for degree in polydegree:
-        n_poly = fun.polynom_N_terms(degree)  # number of terms in the design matrix for the given degree
-        print('p = %2d, np = %3d' % (degree, n_poly))
-
-        # Setting up correct design matrices for the current degree
-        X_train_bs = np.zeros((len(X_train_scaled), n_poly))
-        X_test_bs = np.zeros((len(X_test_scaled), n_poly))
-        X_cv = np.zeros((len(X_scaled), n_poly))
-
-        # Filling the elements up to term n_poly
-        X_train_bs[:, :] = X_train_scaled[:, 0:n_poly]
-        X_test_bs[:, :] = X_test_scaled[:, 0:n_poly]
-        X_cv[:, :] = X_scaled[:, 0:n_poly]
-
-        # Looping over all the lambda values
-        for i in range(nlambdas):
-            lmb = lambdas[i]  # current lambda value
-
-            # Printing out in order to gauge where we are
-            if i % 10 == 0:
-                print('i = %d, lmb= %.3e' % (i, lmb))
-
-            # Updating the current lambda value for Ridge and Lasso
-            if reg_string == 'Ridge':
-                reg_obj.set_lambda(lmb)
-            elif reg_string == 'Lasso':
-                reg_obj = skl.Lasso(alpha=lmb, max_iter=max_iter, precompute=True, warm_start=True)
-            elif reg_string == 'SGD':
-                reg_obj.set_lambda(lmb)
-            elif reg_string == 'SGD_SKL':
-                reg_obj = SGDRegressor(max_iter=N_epochs, penalty=penalty, eta0=0.1)
-#                reg_obj = SGDRegressor(max_iter=N_epochs, penalty=None, eta0=0.1, learning_rate='constant')
+print('\nSGDClassifier:')
+fun.print_MSE_R2(y_train, y_fit, 'train', 'SGD')
+fun.print_MSE_R2(y_test, y_pred, 'test', 'SGD')
 
 
-            # Bootstrap
-            BS = res.Bootstrap(X_train_bs, X_test_bs, z_train, z_test, reg_obj)
-            error_, bias_, var_, trainE_ = BS.compute(N_bs)  # performing the Bootstrap
-            bs_error_test[degree-1, i] = error_
-            bs_bias[degree-1, i] = bias_
-            bs_var[degree-1, i] = var_
-            bs_error_train[degree-1, i] = trainE_
-
-            # Cross validation
-            CV = res.CrossValidation(X_cv, z, reg_obj)
-            trainE, testE = CV.compute(K)  # performing the Cross-Validation
-            cv_error_train[degree-1, i] = trainE
-            cv_error_test[degree-1, i] = testE
-
-        # Locating minimum MSE for each polynomial degree
-        # Bootstrap
-        index_bs = np.argmin(bs_error_test[degree - 1, :])
-        bs_lmb_opt[degree - 1] = lambdas[index_bs]
-        bs_error_train_opt[:, 0] = bs_error_train[:, index_bs]
-        bs_error_test_opt[:, 0] = bs_error_test[:, index_bs]
-        bs_bias_opt[:, 0] = bs_bias[:, index_bs]
-        bs_var_opt[:, 0] = bs_var[:, index_bs]
-
-        # Cross-validation
-        index_cv = np.argmin(cv_error_test[degree - 1, :])
-        cv_lmb_opt[degree - 1] = lambdas[index_cv]
-        cv_error_train_opt[:, 0] = cv_error_train[:, index_cv]
-        cv_error_test_opt[:, 0] = cv_error_test[:, index_cv]
-
-    # Locate minimum MSE  to see how it depends on lambda
-    bs_min = np.unravel_index(np.argmin(bs_error_test), bs_error_test.shape)
-    cv_min = np.unravel_index(np.argmin(cv_error_test), cv_error_test.shape)
-    bs_best = [polydegree[bs_min[0]], lambdas[bs_min[1]]]
-    cv_best = [polydegree[cv_min[0]], lambdas[cv_min[1]]]
-
-    # Bootstrap
-    bs_error_train_opt[:, 1] = bs_error_train[:, bs_min[1]]
-    bs_error_test_opt[:, 1] = bs_error_test[:, bs_min[1]]
-    bs_bias_opt[:, 1] = bs_bias[:, bs_min[1]]
-    bs_var_opt[:, 1] = bs_var[:, bs_min[1]]
-
-    # Cross-validation
-    cv_error_train_opt[:, 1] = cv_error_train[:, cv_min[1]]
-    cv_error_test_opt[:, 1] = cv_error_test[:, cv_min[1]]
-
-    # This return is extremely large, sadly, and should have been improved upon
-    # this was just the fastest way of doing it when I had to restructure the code
-    # so better planning in the future would be a better solution
-    return (bs_error_train, bs_error_test, bs_bias, bs_var,
-            bs_error_train_opt, bs_error_test_opt, bs_bias_opt, bs_var_opt, bs_lmb_opt,
-            cv_error_train, cv_error_test, cv_error_train_opt, cv_error_test_opt, cv_lmb_opt,
-            bs_min, bs_best, cv_min, cv_best)
+##########################################
+################ PLOTTING ################
+##########################################
+# Results and figure saving could definitely be improved, and should have been considered more earlier in the process.
+save = filename + '_lr_%s_Nhyp%s' % (learning_rate, hyper_par_string)
+run_mode += '/%s' % filename
+if not os.path.exists(fig_path + 'task_%s' % run_mode):
+    os.mkdir(fig_path + 'task_%s' % run_mode)
 
 
-    # Printing MSE and R2 score
-#    fun.print_MSE_R2(z_test, z_pred, 'test', 'OLS')
-#    fun.print_MSE_R2(z_train, z_fit, 'train', 'OLS')
+for i, metric in zip(range(2), ['MSE', 'R2']):  # easier to copy paste and reuse code from task_b
+    # N_epochs vs batch_size
+    fun.plot_heatmap(n_epochs, batch_size, score[:, :, k_, l_, i, 1].T,
+                     'N epochs', 'batch size', metric, 'Test %s' % metric,
+                     save+'_%s_%s' % (metric, 'n_epochs_bsize'), fig_path, run_mode, xt='int', yt='int')
 
+    # N_epochs vs eta0
+    fun.plot_heatmap(n_epochs, eta0, score[:, j_, :, l_, i, 1].T,
+                     'N epochs', 'learning rate', metric, 'Test %s' % metric,
+                     save+'_%s_%s' % (metric, 'n_epochs_eta0'), fig_path, run_mode, xt='int', yt='exp')
 
-########################################################################################################################
-# But now makes every relevant Franke function plot for OLS
+    # N_epochs vs lambdas
+    fun.plot_heatmap(n_epochs, lambdas, score[:, j_, k_, :, i, 1].T,
+                     'N epochs', 'lambda', metric, 'Test %s' % metric,
+                     save+'_%s_%s' % (metric, 'n_epochs_lambdas'), fig_path, run_mode, xt='int', yt='exp')
 
-# Setting up to make sure things work
-nlambdas = 1
-lambdas = np.ones(nlambdas)
-lambdas[0] = 1e-4
+    # batch_size vs lambdas
+    fun.plot_heatmap(batch_size, lambdas, score[i_, :, k_, :, i, 1].T,
+                     'batch size', 'lambda', metric, 'Test %s' % metric,
+                     save+'_%s_%s' % (metric, 'bs_lambdas'), fig_path, run_mode, xt='int', yt='exp')
 
-# Parameters for saving to file
-save = 'N%d_pmax%d_nlamb%d_noise%.2f_seed%d' % (N, p, nlambdas, noise, seed)
-save_bs = '%s_%s_%s_Nbs%d' % (save, reg_str, 'boot', N_bootstraps)
-save_cv = '%s_%s_%s_k%d' % (save, reg_str, 'cv', K)
-
-# Performing the regression
-polydegree = np.arange(1, p + 1)
-variables = run_regression(X, z_ravel, reg_str, polydegree, lambdas, N_bootstraps, K, test_size, scale, t0=t0, t1=t1, penalty=penalty)
-# Unpacking variables
-bs_error_train, bs_error_test = variables[0:2]
-bs_bias, bs_var = variables[2:4]
-bs_error_train_opt, bs_error_test_opt = variables[4:6]
-bs_bias_opt, bs_var_opt, bs_lmb_opt = variables[6:9]
-cv_error_train, cv_error_test = variables[9:11]
-cv_error_train_opt, cv_error_test_opt, cv_lmb_opt = variables[11:14]
-bs_min, bs_best, cv_min, cv_best = variables[14:18]
-
-# Bootstrap plots
-xlim = [1, 30]
-#ylim = [0.0, 0.02]
-ylim = [0.0, 0.05]
-fun.plot_MSE_train_test(polydegree, bs_error_train_opt[:, 0], bs_error_test_opt[:, 0],
-                        '%s, $N$=%d, $N_{bs}$=%d, noise=%.2f' % (reg_str, N, N_bootstraps, noise),
-                        'train_test_%s' % save_bs, fig_path, run_mode,
-                        resample='Bootstrap', xlim=xlim, ylim=ylim)
-
-fun.plot_bias_variance(polydegree, bs_error_test_opt[:, 0], bs_bias_opt[:, 0], bs_var_opt[:, 0],
-                       'Bootstrap, %s, $N$=%d, $N_{bs}$=%d, noise=%.2f' % (reg_str, N, N_bootstraps, noise),
-                       '%s' % save_bs, fig_path, run_mode, xlim=xlim, ylim=ylim)
-
-# Cross-validation plot
-fun.plot_MSE_train_test(polydegree, cv_error_train_opt[:, 0], cv_error_test_opt[:, 0],
-                        '%s, $N$=%d, $K$=%d, noise=%.2f' % (reg_str, N, K, noise),
-                        'train_test_%s' % save_cv, fig_path, run_mode,
-                        resample='CV', xlim=xlim, ylim=ylim)
-
-# Write bootstrap to file
-fun.save_to_file([bs_error_test_opt[:, 0], bs_bias_opt[:, 0], bs_var_opt[:, 0]],
-                 ['bs_error_test', 'bs_bias', 'bs_var'],
-                 write_path+'franke/bias_var_task_%s_%s.txt' % (run_mode, save_bs), benchmark)
-
-# Write CV to file
-fun.save_to_file([cv_error_test_opt[:, 0], cv_error_train[:, 0]], ['cv_error_test', 'cv_error_train'],
-                 write_path+'franke/train_test_task_%s_%s.txt' % (run_mode, save_cv), benchmark)
+    # eta0 vs lambdas
+    fun.plot_heatmap(eta0, lambdas, score[i_, j_, :, :, i, 1].T,
+                     'learning rate', 'lambda', metric, 'Test %s' % metric,
+                     save+'_%s_%s' % (metric, 'eta0_lambdas'), fig_path, run_mode, xt='exp', yt='exp')
 
 plt.show()
